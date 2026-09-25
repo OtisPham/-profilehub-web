@@ -67,6 +67,7 @@ export default function Sidebar() {
             <Link to="/achievements" onClick={() => setMobileOpen(false)} style={getMenuStyles('/achievements')}><Trophy size={17} /> Thành Tích & Giải Thưởng</Link>
 
             <div style={{ padding: '0 18px', marginTop: '14px', marginBottom: '4px', fontSize: '10.5px', color: '#64748b', fontWeight: 'bold', letterSpacing: '0.5px' }}>CÔNG CỤ NGHỀ NGHIỆP</div>
+            <Link to="/student/jobs" onClick={() => setMobileOpen(false)} style={getMenuStyles('/student/jobs')}><Briefcase size={17} color="#3b82f6" /> Bài Đăng Tuyển Dụng</Link>
             <Link to="/cv-builder" onClick={() => setMobileOpen(false)} style={getMenuStyles('/cv-builder')}><FileText size={17} /> AI CV Builder (Dán JD)</Link>
             <Link to="/portfolio-match" onClick={() => setMobileOpen(false)} style={getMenuStyles('/portfolio-match')}><Target size={17} color="#3b82f6" /> AI Portfolio Match & Gap</Link>
             <Link to="/interview-prep" onClick={() => setMobileOpen(false)} style={getMenuStyles('/interview-prep')}><Sparkles size={17} color="#3b82f6" /> Luyện Phỏng Vấn AI</Link>

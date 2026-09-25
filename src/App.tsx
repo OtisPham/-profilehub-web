@@ -19,6 +19,7 @@ import AIRecruitmentAssistant from './pages/recruiter/AIRecruitmentAssistant';
 import RecruiterProfile from './pages/recruiter/RecruiterProfile';
 import AIInterviewPrep from './pages/student/AIInterviewPrep';
 import { PortfolioMatchPage } from './pages/student/PortfolioMatchPage';
+import StudentJobs from './pages/student/StudentJobs';
 import MainLayout from './components/layout/MainLayout';
 
 import PublicVerificationView from './pages/public/PublicVerificationView';
@@ -42,6 +43,7 @@ function App() {
         <Route path="/cv-builder" element={<CVBuilder />} />
         <Route path="/interview-prep" element={<AIInterviewPrep />} />
         <Route path="/portfolio-match" element={<PortfolioMatchPage />} />
+        <Route path="/student/jobs" element={<StudentJobs />} />
         <Route path="/certificates" element={<Certificates />}/>
         <Route path="/teacher/profile" element={<TeacherProfile />} />
         <Route path="/teacher/inbox" element={<VerificationInbox />} />

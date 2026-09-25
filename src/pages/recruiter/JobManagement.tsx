@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthProvider';
 import { supabase } from '../../services/supabase';
 import type { JobPost } from '../../types/database';
 import { Plus, MapPin, Building, Users, CheckCircle } from 'lucide-react';
+import { getSharedJobs, saveSharedJobs } from '../../utils/jobSync';
 
 export default function JobManagement() {
   const { user } = useAuth();
@@ -25,38 +26,10 @@ export default function JobManagement() {
 
         if (!error && dbJobs && dbJobs.length > 0) {
           setJobs(dbJobs);
+          saveSharedJobs(dbJobs, user?.id);
         } else {
-          const localJobs = localStorage.getItem(`jobs_${user?.id || 'default'}`);
-          if (localJobs) {
-            setJobs(JSON.parse(localJobs));
-          } else {
-            const initialJobs: JobPost[] = [
-              {
-                id: 'j1',
-                recruiter_id: user?.id || 'rec1',
-                title: 'Thực tập sinh ReactJS / Fullstack',
-                department: 'Công nghệ thông tin',
-                location: 'TP. Hồ Chí Minh',
-                required_skills: ['ReactJS', 'TypeScript', 'Node.js', 'Git'],
-                description: 'Tuyển dụng thực tập sinh tham gia dự án phần mềm doanh nghiệp. Yêu cầu có đồ án thực tế.',
-                status: 'active',
-                created_at: new Date().toISOString()
-              },
-              {
-                id: 'j2',
-                recruiter_id: user?.id || 'rec1',
-                title: 'Thực tập sinh UI/UX Designer',
-                department: 'Thiết kế sản phẩm',
-                location: 'TP. Hồ Chí Minh',
-                required_skills: ['Figma', 'UI/UX', 'User Research', 'Wireframing'],
-                description: 'Xây dựng thiết kế giao diện cho ứng dụng di động & website học tập.',
-                status: 'active',
-                created_at: new Date().toISOString()
-              }
-            ];
-            setJobs(initialJobs);
-            localStorage.setItem(`jobs_${user?.id || 'default'}`, JSON.stringify(initialJobs));
-          }
+          const shared = getSharedJobs();
+          setJobs(shared);
         }
       } catch (err) {
         console.error("Fetch jobs error:", err);
@@ -101,7 +74,7 @@ export default function JobManagement() {
 
     const updated = [newJob, ...jobs];
     setJobs(updated);
-    localStorage.setItem(`jobs_${user?.id || 'default'}`, JSON.stringify(updated));
+    saveSharedJobs(updated, user?.id);
 
     // Reset form & close modal
     setTitle('');

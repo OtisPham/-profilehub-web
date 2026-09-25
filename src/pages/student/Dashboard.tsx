@@ -15,7 +15,8 @@ import {
   Clock,
   MapPin,
   Video,
-  CheckCircle2
+  CheckCircle2,
+  Briefcase
 } from 'lucide-react';
 import type { VerificationStatus } from '../../types/database';
 import { getSharedPipeline, updateInterviewStatusByStudent } from '../../utils/pipelineSync';
@@ -246,6 +247,29 @@ export default function Dashboard() {
             style={{ padding: '10px 20px', backgroundColor: '#1e3a8a', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
             <UserCheck size={16} /> Xem Hồ Sơ Cá Nhân →
+          </a>
+        </div>
+
+        {/* Banner Quick Link to Jobs Feed */}
+        <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '16px', padding: '20px 24px', marginBottom: '25px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#1d4ed8', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Briefcase size={22} />
+            </div>
+            <div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e3a8a' }}>
+                💼 Bài Đăng Tuyển Dụng Doanh Nghiệp Đang Mở
+              </div>
+              <div style={{ fontSize: '13px', color: '#3b82f6', marginTop: '2px' }}>
+                Xem danh sách bài đăng từ Nhà tuyển dụng đối tác, ứng tuyển trực tiếp & xem thông tin chi tiết HR & Công ty.
+              </div>
+            </div>
+          </div>
+          <a
+            href="/student/jobs"
+            style={{ padding: '10px 18px', backgroundColor: '#1e3a8a', color: 'white', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', whiteSpace: 'nowrap' }}
+          >
+            Xem Bài Đăng Tuyển Dụng →
           </a>
         </div>
 
