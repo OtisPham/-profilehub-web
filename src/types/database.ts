@@ -140,7 +140,7 @@ export interface CandidatePipelineItem {
   interview_time?: string;
   meeting_link?: string;
   interview_location?: string;
-  interview_status?: 'scheduled' | 'completed' | 'cancelled';
+  interview_status?: 'pending_student' | 'confirmed' | 'completed' | 'cancelled' | 'scheduled';
   created_at?: string;
   updated_at?: string;
   student?: StudentProfile;

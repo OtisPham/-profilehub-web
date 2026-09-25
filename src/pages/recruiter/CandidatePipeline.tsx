@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthProvider';
 import { supabase } from '../../services/supabase';
 import RecruiterFeedbackModal from '../../components/recruiter/RecruiterFeedbackModal';
+import { getSharedPipeline, saveSharedPipeline } from '../../utils/pipelineSync';
 import { User, Edit3, MessageSquarePlus, Calendar, Clock, Video, MapPin, Trash2 } from 'lucide-react';
 import type { PipelineStage, CandidatePipelineItem, StudentProfile } from '../../types/database';
 
@@ -34,23 +35,25 @@ export default function CandidatePipeline() {
     const fetchPipeline = async () => {
       setLoading(true);
       try {
-        const { data: dbItems, error } = await supabase
-          .from('recruiter_pipeline')
-          .select('*, student:student_profiles(*)');
+        const shared = getSharedPipeline(user?.id);
+        if (shared && shared.length > 0) {
+          setPipeline(shared);
+        } else {
+          const { data: dbItems } = await supabase
+            .from('recruiter_pipeline')
+            .select('*, student:student_profiles(*)');
 
-        if (error || !dbItems || dbItems.length === 0) {
-          // Load local candidates if DB is empty/mock
-          const { data: students } = await supabase.from('student_profiles').select('*');
-          const mockStudents: StudentProfile[] = students && students.length > 0 ? students : [
-            { id: 's1', full_name: 'Nguyễn Văn A', major: 'Công nghệ thông tin', university: 'ĐH Bách Khoa', gpa: '3.6/4.0', skills: ['ReactJS', 'Node.js', 'TypeScript'] },
-            { id: 's2', full_name: 'Trần Thị B', major: 'Thiết kế Đồ họa (UI/UX)', university: 'ĐH Kiến Trúc', gpa: '3.8/4.0', skills: ['Figma', 'User Research', 'UI/UX'] },
-            { id: 's3', full_name: 'Lê Hoàng C', major: 'Khoa học Dữ liệu', university: 'ĐH KHTN', gpa: '3.5/4.0', skills: ['Python', 'SQL', 'Machine Learning'] }
-          ];
-
-          const localSaved = localStorage.getItem(`pipeline_${user?.id || 'default'}`);
-          if (localSaved) {
-            setPipeline(JSON.parse(localSaved));
+          if (dbItems && dbItems.length > 0) {
+            setPipeline(dbItems);
+            saveSharedPipeline(dbItems, user?.id);
           } else {
+            const { data: students } = await supabase.from('student_profiles').select('*');
+            const mockStudents: StudentProfile[] = students && students.length > 0 ? students : [
+              { id: 's1', full_name: 'Nguyễn Văn A', major: 'Công nghệ thông tin', university: 'ĐH Bách Khoa', gpa: '3.6/4.0', skills: ['ReactJS', 'Node.js', 'TypeScript'] },
+              { id: 's2', full_name: 'Trần Thị B', major: 'Thiết kế Đồ họa (UI/UX)', university: 'ĐH Kiến Trúc', gpa: '3.8/4.0', skills: ['Figma', 'User Research', 'UI/UX'] },
+              { id: 's3', full_name: 'Lê Hoàng C', major: 'Khoa học Dữ liệu', university: 'ĐH KHTN', gpa: '3.5/4.0', skills: ['Python', 'SQL', 'Machine Learning'] }
+            ];
+
             const initialPipeline: CandidatePipelineItem[] = [
               { id: 'p1', recruiter_id: user?.id || 'rec1', student_id: mockStudents[0].id, stage: 'discovered', student: mockStudents[0], private_notes: 'CV đồ án xuất sắc, cần liên hệ tuần này.' },
               { id: 'p2', recruiter_id: user?.id || 'rec1', student_id: mockStudents[1].id, stage: 'shortlisted', student: mockStudents[1], private_notes: 'Đã xem Figma prototype đồ án ecommerce.' },
@@ -62,17 +65,15 @@ export default function CandidatePipeline() {
                 student: mockStudents[2], 
                 private_notes: 'Hẹn phỏng vấn trao đổi chuyên sâu về Data Analyst.',
                 interview_date: '2026-09-26',
-                interview_time: '10:00',
+                interview_time: '10:00 AM',
                 meeting_link: 'https://meet.google.com/abc-defg-hij',
                 interview_location: 'Online (Google Meet)',
-                interview_status: 'scheduled'
+                interview_status: 'confirmed'
               }
             ];
             setPipeline(initialPipeline);
-            localStorage.setItem(`pipeline_${user?.id || 'default'}`, JSON.stringify(initialPipeline));
+            saveSharedPipeline(initialPipeline, user?.id);
           }
-        } else {
-          setPipeline(dbItems);
         }
       } catch (err) {
         console.error("Pipeline fetch error:", err);
@@ -86,7 +87,7 @@ export default function CandidatePipeline() {
 
   const savePipelineToStorage = (updated: CandidatePipelineItem[]) => {
     setPipeline(updated);
-    localStorage.setItem(`pipeline_${user?.id || 'default'}`, JSON.stringify(updated));
+    saveSharedPipeline(updated, user?.id);
   };
 
   const calculateMatchScore = (skills: string[] = []) => {
@@ -121,7 +122,7 @@ export default function CandidatePipeline() {
   const handleOpenScheduleModal = (item: CandidatePipelineItem) => {
     setScheduleItem(item);
     setScheduleDate(item.interview_date || '2026-09-26');
-    setScheduleTime(item.interview_time || '10:00');
+    setScheduleTime(item.interview_time || '10:00 AM');
     setScheduleMeetingLink(item.meeting_link || 'https://meet.google.com/abc-defg-hij');
     setScheduleLocation(item.interview_location || 'Online (Google Meet)');
   };
@@ -136,7 +137,7 @@ export default function CandidatePipeline() {
             interview_time: scheduleTime,
             meeting_link: scheduleMeetingLink,
             interview_location: scheduleLocation,
-            interview_status: 'scheduled' as const,
+            interview_status: 'pending_student' as const,
             stage: 'interview' as PipelineStage,
             updated_at: new Date().toISOString()
           }
@@ -167,14 +168,27 @@ export default function CandidatePipeline() {
     }
   };
 
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'confirmed':
+        return <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#d1fae5', color: '#047857', padding: '2px 8px', borderRadius: '10px', border: '1px solid #a7f3d0' }}>✅ SV Đã Xác Nhận</span>;
+      case 'pending_student':
+        return <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '10px', border: '1px solid #fde68a' }}>⏳ Chờ SV Xác Nhận</span>;
+      case 'completed':
+        return <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#e0e7ff', color: '#3730a3', padding: '2px 8px', borderRadius: '10px' }}>🏁 Phỏng Vấn Xong</span>;
+      default:
+        return <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#f3e8ff', color: '#6b21a8', padding: '2px 8px', borderRadius: '10px' }}>📅 Đã Hẹn Lịch</span>;
+    }
+  };
+
   return (
     <div style={{ padding: '30px', width: '100%', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: '25px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
-            📊 Pipeline Quản Lý Ứng Viên & Lịch Phỏng Vấn
+            📊 Pipeline Quản Lý Ứng Viên & Lịch Phỏng Vấn (2 Chiều)
           </h1>
           <p style={{ color: '#64748b', margin: 0, fontSize: '14px' }}>
-            Theo dõi tiến trình tuyển dụng, lên lịch phỏng vấn trực tiếp và gửi phản hồi đánh giá ứng viên.
+            Mời phỏng vấn, theo dõi trạng thái xác nhận từ sinh viên realtime và gửi đánh giá năng lực.
           </p>
         </div>
 
@@ -231,24 +245,27 @@ export default function CandidatePipeline() {
                           {/* Interview Schedule Box if present */}
                           {(item.stage === 'interview' || item.interview_date) && (
                             <div style={{ backgroundColor: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px', padding: '8px 10px', marginBottom: '10px' }}>
-                              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <Calendar size={12} /> Lịch Phỏng Vấn:
                                 </span>
-                                {item.interview_date && (
-                                  <button
-                                    onClick={() => handleDeleteSchedule(item.id)}
-                                    title="Hủy / Xóa lịch phỏng vấn"
-                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
-                                )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  {getStatusBadge(item.interview_status)}
+                                  {item.interview_date && (
+                                    <button
+                                      onClick={() => handleDeleteSchedule(item.id)}
+                                      title="Hủy / Xóa lịch phỏng vấn"
+                                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                               {item.interview_date ? (
                                 <>
                                   <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <Clock size={12} color="#6d28d9" /> {item.interview_date} lúc {item.interview_time || '10:00'}
+                                    <Clock size={12} color="#6d28d9" /> {item.interview_date} lúc {item.interview_time || '10:00 AM'}
                                   </div>
                                   <div style={{ fontSize: '11px', color: '#4b5563', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     <MapPin size={11} /> {item.interview_location || 'Online'}
@@ -341,10 +358,10 @@ export default function CandidatePipeline() {
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
             <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '500px' }}>
               <h3 style={{ margin: '0 0 12px 0', color: '#0f172a', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                📅 Lên Lịch Phỏng Vấn: {scheduleItem.student?.full_name}
+                📅 Mời Phỏng Vấn: {scheduleItem.student?.full_name}
               </h3>
               <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>
-                Cấu hình thời gian, đường dẫn cuộc họp và hình thức phỏng vấn cho ứng viên.
+                Gửi lời mời phỏng vấn đến sinh viên. Sinh viên sẽ nhận được thông báo để xác nhận tham gia.
               </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -421,7 +438,7 @@ export default function CandidatePipeline() {
                     onClick={handleSaveSchedule}
                     style={{ padding: '8px 16px', backgroundColor: '#7c3aed', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
                   >
-                    💾 Lưu Lịch Phỏng Vấn
+                    🚀 Gửi Lời Mời Phỏng Vấn
                   </button>
                 </div>
               </div>

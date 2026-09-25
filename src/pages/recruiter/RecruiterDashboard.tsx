@@ -23,6 +23,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import VerifiedBadge from '../../components/common/VerifiedBadge';
+import { getSharedPipeline } from '../../utils/pipelineSync';
 
 interface TalentCandidate {
   id: string;
@@ -53,6 +54,7 @@ interface UpcomingInterviewItem {
   interview_time: string;
   meeting_link: string;
   interview_location: string;
+  interview_status?: string;
   notes?: string;
 }
 
@@ -128,7 +130,7 @@ export default function RecruiterDashboard() {
 
           // Fetch dynamic stats from recruiter tables & localStorage fallback
           const localJobs = JSON.parse(localStorage.getItem(`jobs_${user?.id || 'default'}`) || '[]');
-          const localPipeline = JSON.parse(localStorage.getItem(`pipeline_${user?.id || 'default'}`) || '[]');
+          const localPipeline = getSharedPipeline(user?.id);
 
           const { data: dbJobs } = await supabase.from('recruiter_jobs').select('id');
           const { data: dbPipeline } = await supabase.from('recruiter_pipeline').select('stage');
@@ -158,6 +160,7 @@ export default function RecruiterDashboard() {
             interview_time: p.interview_time || '10:00 AM',
             meeting_link: p.meeting_link || 'https://meet.google.com/abc-defg-hij',
             interview_location: p.interview_location || 'Online (Google Meet)',
+            interview_status: p.interview_status || 'confirmed',
             notes: p.private_notes
           }));
 
@@ -550,9 +553,13 @@ export default function RecruiterDashboard() {
                           </div>
                           
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#d8b4fe', color: '#581c87', padding: '2px 8px', borderRadius: '10px' }}>
-                              Đã lên lịch
-                            </span>
+                            {iv.interview_status === 'confirmed' ? (
+                              <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#d1fae5', color: '#047857', padding: '2px 8px', borderRadius: '10px', border: '1px solid #a7f3d0' }}>✅ SV Đã Xác Nhận</span>
+                            ) : iv.interview_status === 'pending_student' ? (
+                              <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '10px', border: '1px solid #fde68a' }}>⏳ Chờ SV Xác Nhận</span>
+                            ) : (
+                              <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#d8b4fe', color: '#581c87', padding: '2px 8px', borderRadius: '10px' }}>📅 Đã Lên Lịch</span>
+                            )}
                             <button
                               onClick={() => handleDeleteInterview(iv.id)}
                               title="Hủy / Xóa cuộc hẹn này"

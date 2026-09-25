@@ -18,6 +18,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import type { VerificationStatus } from '../../types/database';
+import { getSharedPipeline, updateInterviewStatusByStudent } from '../../utils/pipelineSync';
 
 interface Project {
   id: string;
@@ -62,6 +63,7 @@ interface InterviewFeedbackData {
 
 interface StudentInterviewItem {
   id: string;
+  student_id?: string;
   recruiter_name: string;
   job_title: string;
   interview_date: string;
@@ -111,22 +113,19 @@ export default function Dashboard() {
       }
 
       if (userRole === 'student') {
-        const localPipeline = JSON.parse(
-          localStorage.getItem(`pipeline_${user?.id || 'default'}`) ||
-          localStorage.getItem(`pipeline_default`) ||
-          localStorage.getItem(`pipeline_rec1`) ||
-          '[]'
-        );
+        const localPipeline = getSharedPipeline(user?.id);
 
         const interviews = localPipeline.filter((p: any) => p.stage === 'interview' || p.interview_date).map((p: any) => ({
           id: p.id,
+          student_id: p.student_id || user?.id || 's3',
           recruiter_name: 'Enterprise Tech Corp',
           job_title: p.student?.major || 'Thực tập sinh Công nghệ',
           interview_date: p.interview_date || '2026-09-26',
           interview_time: p.interview_time || '10:00 AM',
           meeting_link: p.meeting_link || 'https://meet.google.com/abc-defg-hij',
           interview_location: p.interview_location || 'Online (Google Meet)',
-          notes: p.private_notes
+          notes: p.private_notes,
+          is_confirmed: p.interview_status === 'confirmed'
         }));
 
         if (interviews.length > 0) {
@@ -318,12 +317,13 @@ export default function Dashboard() {
                     </a>
                     <button
                       onClick={() => {
+                        updateInterviewStatusByStudent(inv.student_id || user?.id || 's3', 'confirmed');
                         setStudentInterviews(prev => prev.map(item => item.id === inv.id ? { ...item, is_confirmed: true } : item));
-                        alert(`Bạn đã xác nhận tham gia buổi phỏng vấn ${inv.job_title}!`);
+                        alert(`Bạn đã xác nhận tham gia buổi phỏng vấn ${inv.job_title}! Trạng thái đã được đồng bộ trực tiếp tới Nhà tuyển dụng.`);
                       }}
-                      style={{ padding: '8px 14px', backgroundColor: inv.is_confirmed ? '#ecfdf5' : '#f1f5f9', color: inv.is_confirmed ? '#047857' : '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      style={{ padding: '8px 14px', backgroundColor: inv.is_confirmed ? '#ecfdf5' : '#7c3aed', color: inv.is_confirmed ? '#047857' : 'white', border: inv.is_confirmed ? '1px solid #a7f3d0' : 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     >
-                      <CheckCircle2 size={14} color={inv.is_confirmed ? '#047857' : '#64748b'} /> {inv.is_confirmed ? 'Đã xác nhận' : 'Xác nhận'}
+                      <CheckCircle2 size={14} color={inv.is_confirmed ? '#047857' : '#ffffff'} /> {inv.is_confirmed ? 'Đã xác nhận' : 'Xác nhận ngay'}
                     </button>
                   </div>
                 </div>

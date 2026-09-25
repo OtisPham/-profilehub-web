@@ -2,16 +2,19 @@ import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAuth } from '../../context/AuthProvider';
+import { getSharedPipeline, updateInterviewStatusByStudent } from '../../utils/pipelineSync';
 import { Bell, Clock, Video, MapPin, CheckCircle, X } from 'lucide-react';
 
 interface StudentNotificationItem {
   id: string;
+  student_id: string;
   title: string;
   interview_date: string;
   interview_time: string;
   meeting_link: string;
   interview_location: string;
   recruiter_name: string;
+  interview_status?: string;
   is_read: boolean;
   is_confirmed?: boolean;
 }
@@ -23,38 +26,38 @@ export default function MainLayout() {
 
   useEffect(() => {
     if (userRole === 'student') {
-      const localPipeline = JSON.parse(
-        localStorage.getItem(`pipeline_${user?.id || 'default'}`) ||
-        localStorage.getItem(`pipeline_default`) ||
-        localStorage.getItem(`pipeline_rec1`) ||
-        '[]'
-      );
-
-      const interviewItems = localPipeline.filter((p: any) => p.stage === 'interview' || p.interview_date);
+      const sharedPipeline = getSharedPipeline(user?.id);
+      const interviewItems = sharedPipeline.filter((p: any) => p.stage === 'interview' || p.interview_date);
 
       if (interviewItems.length > 0) {
         const formatted: StudentNotificationItem[] = interviewItems.map((iv: any, idx: number) => ({
           id: `notif_${iv.id || idx}`,
-          title: `Lịch phỏng vấn vị trí ${iv.student?.major || 'Thực tập sinh'}`,
+          student_id: iv.student_id || 's3',
+          title: `Lời mời phỏng vấn vị trí ${iv.student?.major || 'Thực tập sinh'}`,
           interview_date: iv.interview_date || '2026-09-26',
           interview_time: iv.interview_time || '10:00 AM',
           meeting_link: iv.meeting_link || 'https://meet.google.com/abc-defg-hij',
           interview_location: iv.interview_location || 'Online (Google Meet)',
           recruiter_name: 'Enterprise Tech Corp',
-          is_read: false
+          interview_status: iv.interview_status || 'pending_student',
+          is_read: false,
+          is_confirmed: iv.interview_status === 'confirmed'
         }));
         setNotifications(formatted);
       } else {
         setNotifications([
           {
             id: 'notif_1',
+            student_id: 's3',
             title: 'Lịch phỏng vấn mới từ Nhà Tuyển Dụng Enterprise Tech Corp',
             interview_date: '2026-09-26',
             interview_time: '10:00 AM',
             meeting_link: 'https://meet.google.com/abc-defg-hij',
             interview_location: 'Online (Google Meet)',
             recruiter_name: 'Enterprise Tech Corp',
-            is_read: false
+            interview_status: 'pending_student',
+            is_read: false,
+            is_confirmed: false
           }
         ]);
       }
@@ -67,9 +70,10 @@ export default function MainLayout() {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
   };
 
-  const handleConfirmInterview = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_confirmed: true, is_read: true } : n));
-    alert('Đã gửi phản hồi xác nhận tham gia buổi phỏng vấn thành công!');
+  const handleConfirmInterview = (notif: StudentNotificationItem) => {
+    updateInterviewStatusByStudent(notif.student_id, 'confirmed');
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_confirmed: true, interview_status: 'confirmed', is_read: true } : n));
+    alert('Đã gửi xác nhận tham gia buổi phỏng vấn! Trạng thái đã được đồng bộ trực tiếp tới Nhà tuyển dụng.');
   };
 
   return (
@@ -83,7 +87,7 @@ export default function MainLayout() {
             <div style={{ fontSize: '13px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontWeight: 'bold', color: '#1e3a8a' }}>🎓 Student Workspace</span>
               <span>/</span>
-              <span style={{ color: '#0f172a' }}>Hệ Thống Thông Báo Lịch Phỏng Vấn</span>
+              <span style={{ color: '#0f172a' }}>Hệ Thống Thông Báo Lịch Phỏng Vấn (2 Chiều)</span>
             </div>
 
             {/* Notification Bell Icon Dropdown Button */}
@@ -133,7 +137,11 @@ export default function MainLayout() {
                         <div key={n.id} onClick={() => handleMarkAsRead(n.id)} style={{ padding: '14px', borderBottom: '1px solid #f1f5f9', backgroundColor: n.is_read ? '#ffffff' : '#faf5ff', cursor: 'pointer' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                             <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#6b21a8' }}>🏢 {n.recruiter_name}</span>
-                            {!n.is_read && <span style={{ fontSize: '9px', fontWeight: 'bold', backgroundColor: '#ef4444', color: 'white', padding: '1px 6px', borderRadius: '10px' }}>MỚI</span>}
+                            {n.is_confirmed ? (
+                              <span style={{ fontSize: '9px', fontWeight: 'bold', backgroundColor: '#ecfdf5', color: '#047857', padding: '1px 6px', borderRadius: '10px' }}>✅ ĐÃ XÁC NHẬN</span>
+                            ) : (
+                              <span style={{ fontSize: '9px', fontWeight: 'bold', backgroundColor: '#fef3c7', color: '#b45309', padding: '1px 6px', borderRadius: '10px' }}>⏳ CHỜ XÁC NHẬN</span>
+                            )}
                           </div>
                           <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', marginBottom: '6px' }}>{n.title}</div>
 
@@ -156,10 +164,10 @@ export default function MainLayout() {
                               <Video size={11} /> Vào Meet
                             </a>
                             <button
-                              onClick={(e) => { e.stopPropagation(); handleConfirmInterview(n.id); }}
-                              style={{ padding: '5px 8px', backgroundColor: n.is_confirmed ? '#ecfdf5' : '#f1f5f9', color: n.is_confirmed ? '#047857' : '#334155', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              onClick={(e) => { e.stopPropagation(); handleConfirmInterview(n); }}
+                              style={{ padding: '5px 8px', backgroundColor: n.is_confirmed ? '#ecfdf5' : '#7c3aed', color: n.is_confirmed ? '#047857' : 'white', border: n.is_confirmed ? '1px solid #a7f3d0' : 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                             >
-                              <CheckCircle size={11} color={n.is_confirmed ? '#047857' : '#64748b'} /> {n.is_confirmed ? 'Đã xác nhận' : 'Xác nhận'}
+                              <CheckCircle size={11} color={n.is_confirmed ? '#047857' : '#ffffff'} /> {n.is_confirmed ? 'Đã xác nhận' : 'Xác nhận ngay'}
                             </button>
                           </div>
                         </div>
