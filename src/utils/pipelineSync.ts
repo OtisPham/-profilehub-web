@@ -3,10 +3,20 @@ import type { CandidatePipelineItem } from '../types/database';
 const SHARED_KEY = 'pipeline_shared_data';
 
 export const getSharedPipeline = (userId?: string): CandidatePipelineItem[] => {
+  const filterOutMock = (list: CandidatePipelineItem[]) => {
+    if (!Array.isArray(list)) return [];
+    return list.filter(item => {
+      const isMockId = ['p1', 'p2', 'p3', 's1', 's2', 's3', 'c1', 'c2', 'c3', 'st1', 'st2', 'st3'].includes(item.id) ||
+                       ['s1', 's2', 's3', 'c1', 'c2', 'c3', 'st1', 'st2', 'st3'].includes(item.student_id);
+      const isMockName = ['Nguyễn Văn A', 'Trần Thị B', 'Lê Hoàng C'].includes(item.student?.full_name || '');
+      return !isMockId && !isMockName;
+    });
+  };
+
   const shared = localStorage.getItem(SHARED_KEY);
   if (shared) {
     try {
-      return JSON.parse(shared);
+      return filterOutMock(JSON.parse(shared));
     } catch {
       // Fallback
     }
@@ -16,7 +26,7 @@ export const getSharedPipeline = (userId?: string): CandidatePipelineItem[] => {
   const userKeyData = userId ? localStorage.getItem(`pipeline_${userId}`) : null;
   if (userKeyData) {
     try {
-      return JSON.parse(userKeyData);
+      return filterOutMock(JSON.parse(userKeyData));
     } catch {
       // Fallback
     }
@@ -26,7 +36,7 @@ export const getSharedPipeline = (userId?: string): CandidatePipelineItem[] => {
   const defaultData = localStorage.getItem('pipeline_default');
   if (defaultData) {
     try {
-      return JSON.parse(defaultData);
+      return filterOutMock(JSON.parse(defaultData));
     } catch {
       // Fallback
     }

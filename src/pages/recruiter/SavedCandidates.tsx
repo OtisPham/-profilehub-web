@@ -19,7 +19,11 @@ export default function SavedCandidates() {
       try {
         const localSaved = localStorage.getItem(`saved_candidates_${user?.id || 'default'}`);
         if (localSaved) {
-          setSavedCandidates(JSON.parse(localSaved));
+          const parsed: SavedCandidate[] = JSON.parse(localSaved);
+          const filtered = Array.isArray(parsed)
+            ? parsed.filter(sc => !['s1', 's2', 's3', 'sc1', 'sc2'].includes(sc.id) && !['Nguyễn Văn A', 'Trần Thị B', 'Lê Hoàng C'].includes(sc.student?.full_name || ''))
+            : [];
+          setSavedCandidates(filtered);
         } else {
           setSavedCandidates([]);
         }
