@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthProvider';
 import { supabase } from '../../services/supabase';
 import RecruiterFeedbackModal from '../../components/recruiter/RecruiterFeedbackModal';
-import { User, Edit3, MessageSquarePlus, Calendar, Clock, Video, MapPin } from 'lucide-react';
+import { User, Edit3, MessageSquarePlus, Calendar, Clock, Video, MapPin, Trash2 } from 'lucide-react';
 import type { PipelineStage, CandidatePipelineItem, StudentProfile } from '../../types/database';
 
 const STAGES: { id: PipelineStage; label: string; color: string; bg: string }[] = [
@@ -100,7 +100,7 @@ export default function CandidatePipeline() {
     const updated = pipeline.map(item => item.id === itemId ? { ...item, stage: newStage, updated_at: new Date().toISOString() } : item);
     savePipelineToStorage(updated);
 
-    // Auto open Interview Schedule Modal or Feedback Modal when moving to 'interview'
+    // Auto open Interview Schedule Modal when moving to 'interview'
     if (newStage === 'interview' && itemToUpdate) {
       handleOpenScheduleModal(itemToUpdate);
     }
@@ -144,6 +144,27 @@ export default function CandidatePipeline() {
     );
     savePipelineToStorage(updated);
     setScheduleItem(null);
+  };
+
+  const handleDeleteSchedule = (itemId: string) => {
+    if (window.confirm('Bạn có chắc chắn muốn hủy / xóa lịch phỏng vấn của ứng viên này không?')) {
+      const updated = pipeline.map(item =>
+        item.id === itemId
+          ? {
+              ...item,
+              interview_date: undefined,
+              interview_time: undefined,
+              meeting_link: undefined,
+              interview_location: undefined,
+              interview_status: undefined
+            }
+          : item
+      );
+      savePipelineToStorage(updated);
+      if (scheduleItem?.id === itemId) {
+        setScheduleItem(null);
+      }
+    }
   };
 
   return (
@@ -210,8 +231,19 @@ export default function CandidatePipeline() {
                           {/* Interview Schedule Box if present */}
                           {(item.stage === 'interview' || item.interview_date) && (
                             <div style={{ backgroundColor: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px', padding: '8px 10px', marginBottom: '10px' }}>
-                              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#7c3aed', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                                <Calendar size={12} /> Lịch Phỏng Vấn:
+                              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Calendar size={12} /> Lịch Phỏng Vấn:
+                                </span>
+                                {item.interview_date && (
+                                  <button
+                                    onClick={() => handleDeleteSchedule(item.id)}
+                                    title="Hủy / Xóa lịch phỏng vấn"
+                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                )}
                               </div>
                               {item.interview_date ? (
                                 <>
@@ -368,19 +400,30 @@ export default function CandidatePipeline() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                <button
-                  onClick={() => setScheduleItem(null)}
-                  style={{ padding: '8px 16px', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleSaveSchedule}
-                  style={{ padding: '8px 16px', backgroundColor: '#7c3aed', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-                >
-                  💾 Lưu Lịch Phỏng Vấn
-                </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
+                {scheduleItem.interview_date ? (
+                  <button
+                    onClick={() => handleDeleteSchedule(scheduleItem.id)}
+                    style={{ padding: '8px 14px', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <Trash2 size={14} /> Xóa / Hủy Lịch
+                  </button>
+                ) : <div />}
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => setScheduleItem(null)}
+                    style={{ padding: '8px 16px', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={handleSaveSchedule}
+                    style={{ padding: '8px 16px', backgroundColor: '#7c3aed', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    💾 Lưu Lịch Phỏng Vấn
+                  </button>
+                </div>
               </div>
             </div>
           </div>

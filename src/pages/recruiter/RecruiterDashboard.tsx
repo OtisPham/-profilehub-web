@@ -18,7 +18,10 @@ import {
   Clock,
   Video,
   MapPin,
-  MessageSquarePlus
+  MessageSquarePlus,
+  Trash2,
+  Filter,
+  RotateCcw
 } from 'lucide-react';
 import VerifiedBadge from '../../components/common/VerifiedBadge';
 
@@ -72,8 +75,9 @@ export default function RecruiterDashboard() {
   // Feedback Modal State
   const [feedbackCandidate, setFeedbackCandidate] = useState<{ id: string; full_name?: string; major?: string } | null>(null);
 
-  // Upcoming Interviews List
+  // Upcoming Interviews List & Calendar Filter
   const [upcomingInterviews, setUpcomingInterviews] = useState<UpcomingInterviewItem[]>([]);
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTalentData = async () => {
@@ -293,6 +297,31 @@ export default function RecruiterDashboard() {
     fetchTalentData();
   }, [user?.id]);
 
+  const handleDeleteInterview = (id: string) => {
+    if (window.confirm('Bạn có chắc chắn muốn hủy / xóa lịch phỏng vấn này không?')) {
+      const updated = upcomingInterviews.filter(iv => iv.id !== id);
+      setUpcomingInterviews(updated);
+
+      const localPipeline = JSON.parse(localStorage.getItem(`pipeline_${user?.id || 'default'}`) || '[]');
+      const updatedPipeline = localPipeline.map((p: any) => p.id === id ? {
+        ...p,
+        interview_date: undefined,
+        interview_time: undefined,
+        meeting_link: undefined,
+        interview_location: undefined
+      } : p);
+      localStorage.setItem(`pipeline_${user?.id || 'default'}`, JSON.stringify(updatedPipeline));
+    }
+  };
+
+  // Filtered interviews list by calendar date
+  const filteredInterviews = selectedCalendarDate
+    ? upcomingInterviews.filter(iv => iv.interview_date === selectedCalendarDate)
+    : upcomingInterviews;
+
+  // Calendar dates with interviews
+  const scheduledDatesSet = new Set(upcomingInterviews.map(iv => iv.interview_date));
+
   return (
     <div style={{ padding: '0', width: '100%', boxSizing: 'border-box' }}>
       
@@ -474,74 +503,196 @@ export default function RecruiterDashboard() {
 
           </div>
 
-          {/* 2.5 Upcoming Interview Schedule Section */}
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', marginBottom: '30px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div>
-                <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Calendar size={20} color="#7c3aed" /> 📅 Lịch Phỏng Vấn Sắp Tới (Upcoming Interviews)
-                </h2>
-                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-                  Danh sách lịch phỏng vấn ứng viên đã xác nhận. Bạn có thể tham gia nhanh cuộc họp hoặc gửi phản hồi đánh giá.
-                </p>
+          {/* 2.5 Upcoming Interview Schedule + Mini Monthly Calendar Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '6.8fr 3.2fr', gap: '20px', marginBottom: '30px' }}>
+            
+            {/* Left: Upcoming Interview Cards List */}
+            <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div>
+                  <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Calendar size={20} color="#7c3aed" /> 📅 Lịch Phỏng Vấn Sắp Tới (Upcoming Interviews)
+                  </h2>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
+                    Danh sách lịch phỏng vấn ứng viên đã xác nhận. Chọn ngày trên Lịch tháng để lọc nhanh.
+                  </p>
+                </div>
+
+                {selectedCalendarDate ? (
+                  <button
+                    onClick={() => setSelectedCalendarDate(null)}
+                    style={{ padding: '6px 12px', backgroundColor: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <RotateCcw size={12} /> Xem tất cả ({upcomingInterviews.length})
+                  </button>
+                ) : (
+                  <a
+                    href="/recruiter/pipeline"
+                    style={{ padding: '6px 12px', backgroundColor: '#f5f3ff', color: '#7c3aed', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #ddd6fe' }}
+                  >
+                    <Kanban size={14} /> Mở Pipeline →
+                  </a>
+                )}
               </div>
 
-              <a
-                href="/recruiter/pipeline"
-                style={{ padding: '8px 14px', backgroundColor: '#f5f3ff', color: '#7c3aed', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid #ddd6fe' }}
-              >
-                <Kanban size={14} /> Quản lý tất cả trong Pipeline →
-              </a>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-              {upcomingInterviews.map(iv => (
-                <div key={iv.id} style={{ backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                      <div>
-                        <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a' }}>{iv.student_name}</div>
-                        <div style={{ fontSize: '12px', color: '#6b21a8', fontWeight: '500' }}>🎓 {iv.major}</div>
-                      </div>
-                      <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#d8b4fe', color: '#581c87', padding: '2px 8px', borderRadius: '10px' }}>
-                        Đã lên lịch
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#374151', marginBottom: '12px', backgroundColor: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #f3e8ff' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: '#6b21a8' }}>
-                        <Clock size={14} /> {iv.interview_date} lúc {iv.interview_time}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4b5563' }}>
-                        <MapPin size={14} /> {iv.interview_location}
-                      </div>
-                      {iv.notes && (
-                        <div style={{ fontSize: '11px', color: '#92400e', fontStyle: 'italic', marginTop: '2px' }}>
-                          📝 {iv.notes}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #e9d5ff', paddingTop: '12px' }}>
-                    <a
-                      href={iv.meeting_link}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ flex: 1, padding: '8px', backgroundColor: '#7c3aed', color: 'white', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', textDecoration: 'none', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
-                    >
-                      <Video size={14} /> Vào Meet
-                    </a>
-                    <button
-                      onClick={() => setFeedbackCandidate({ id: iv.student_id, full_name: iv.student_name, major: iv.major })}
-                      style={{ padding: '8px 12px', backgroundColor: '#ffffff', color: '#7c3aed', border: '1px solid #c084fc', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <MessageSquarePlus size={14} /> Feedback
-                    </button>
-                  </div>
+              {filteredInterviews.length === 0 ? (
+                <div style={{ padding: '30px', textAlign: 'center', border: '1px dashed #cbd5e1', borderRadius: '12px', color: '#94a3b8', fontSize: '13px' }}>
+                  Chưa có lịch phỏng vấn nào vào ngày <strong style={{ color: '#7c3aed' }}>{selectedCalendarDate}</strong>.
                 </div>
-              ))}
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
+                  {filteredInterviews.map(iv => (
+                    <div key={iv.id} style={{ backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                          <div>
+                            <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a' }}>{iv.student_name}</div>
+                            <div style={{ fontSize: '12px', color: '#6b21a8', fontWeight: '500' }}>🎓 {iv.major}</div>
+                          </div>
+                          
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#d8b4fe', color: '#581c87', padding: '2px 8px', borderRadius: '10px' }}>
+                              Đã lên lịch
+                            </span>
+                            <button
+                              onClick={() => handleDeleteInterview(iv.id)}
+                              title="Hủy / Xóa cuộc hẹn này"
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#374151', marginBottom: '12px', backgroundColor: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #f3e8ff' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: '#6b21a8' }}>
+                            <Clock size={14} /> {iv.interview_date} lúc {iv.interview_time}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4b5563' }}>
+                            <MapPin size={14} /> {iv.interview_location}
+                          </div>
+                          {iv.notes && (
+                            <div style={{ fontSize: '11px', color: '#92400e', fontStyle: 'italic', marginTop: '2px' }}>
+                              📝 {iv.notes}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #e9d5ff', paddingTop: '12px' }}>
+                        <a
+                          href={iv.meeting_link}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ flex: 1, padding: '8px', backgroundColor: '#7c3aed', color: 'white', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', textDecoration: 'none', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                        >
+                          <Video size={14} /> Vào Meet
+                        </a>
+                        <button
+                          onClick={() => setFeedbackCandidate({ id: iv.student_id, full_name: iv.student_name, major: iv.major })}
+                          style={{ padding: '8px 12px', backgroundColor: '#ffffff', color: '#7c3aed', border: '1px solid #c084fc', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <MessageSquarePlus size={14} /> Feedback
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {/* Right: Mini Monthly Calendar Component */}
+            <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a', marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Calendar size={18} color="#7c3aed" /> Lịch Tháng 9 / 2026
+                  </span>
+                  <span style={{ fontSize: '11px', backgroundColor: '#f3e8ff', color: '#6b21a8', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                    {scheduledDatesSet.size} ngày có lịch
+                  </span>
+                </div>
+
+                {/* Day of Week Headers */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlignment: 'center', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px', textAlign: 'center' }}>
+                  <div>T2</div>
+                  <div>T3</div>
+                  <div>T4</div>
+                  <div>T5</div>
+                  <div>T6</div>
+                  <div>T7</div>
+                  <div style={{ color: '#ef4444' }}>CN</div>
+                </div>
+
+                {/* Calendar Days Grid (September 2026 starting on T3 - 1st is Tuesday) */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                  {/* Empty cell for Monday Aug 31 */}
+                  <div style={{ padding: '8px 0', textAlign: 'center', fontSize: '11px', color: '#cbd5e1' }}>31</div>
+
+                  {Array.from({ length: 30 }, (_, i) => {
+                    const dayNum = i + 1;
+                    const dateStr = `2026-09-${dayNum < 10 ? '0' + dayNum : dayNum}`;
+                    const hasSchedule = scheduledDatesSet.has(dateStr);
+                    const isSelected = selectedCalendarDate === dateStr;
+
+                    return (
+                      <button
+                        key={dayNum}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedCalendarDate(null);
+                          } else {
+                            setSelectedCalendarDate(dateStr);
+                          }
+                        }}
+                        style={{
+                          padding: '8px 0',
+                          textAlign: 'center',
+                          fontSize: '12px',
+                          fontWeight: hasSchedule || isSelected ? 'bold' : 'normal',
+                          borderRadius: '8px',
+                          border: isSelected ? '2px solid #7c3aed' : '1px solid transparent',
+                          backgroundColor: isSelected
+                            ? '#7c3aed'
+                            : hasSchedule
+                            ? '#f3e8ff'
+                            : '#f8fafc',
+                          color: isSelected
+                            ? '#ffffff'
+                            : hasSchedule
+                            ? '#6b21a8'
+                            : '#334155',
+                          cursor: 'pointer',
+                          position: 'relative',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {dayNum}
+                        {hasSchedule && !isSelected && (
+                          <span style={{ position: 'absolute', bottom: '3px', left: '50%', transform: 'translateX(-50%)', width: '4px', height: '4px', backgroundColor: '#7c3aed', borderRadius: '50%' }} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Legend & Reset button */}
+              <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#64748b' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '8px', height: '8px', backgroundColor: '#f3e8ff', border: '1px solid #c084fc', borderRadius: '50%' }} /> Ngày có hẹn phỏng vấn
+                </div>
+                {selectedCalendarDate && (
+                  <button
+                    onClick={() => setSelectedCalendarDate(null)}
+                    style={{ background: 'none', border: 'none', color: '#7c3aed', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px', padding: 0 }}
+                  >
+                    Hủy lọc
+                  </button>
+                )}
+              </div>
+            </div>
+
           </div>
 
           {/* 3. Verified Talent Feed */}
