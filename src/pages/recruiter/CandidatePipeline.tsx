@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthProvider';
 import { supabase } from '../../services/supabase';
 import RecruiterFeedbackModal from '../../components/recruiter/RecruiterFeedbackModal';
-import { User, Edit3, MessageSquarePlus } from 'lucide-react';
+import { User, Edit3, MessageSquarePlus, Calendar, Clock, Video, MapPin } from 'lucide-react';
 import type { PipelineStage, CandidatePipelineItem, StudentProfile } from '../../types/database';
 
 const STAGES: { id: PipelineStage; label: string; color: string; bg: string }[] = [
@@ -22,6 +22,13 @@ export default function CandidatePipeline() {
   const [editingItem, setEditingItem] = useState<CandidatePipelineItem | null>(null);
   const [noteText, setNoteText] = useState('');
   const [feedbackCandidate, setFeedbackCandidate] = useState<{ id: string; full_name?: string; major?: string } | null>(null);
+
+  // Modal Interview Schedule
+  const [scheduleItem, setScheduleItem] = useState<CandidatePipelineItem | null>(null);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
+  const [scheduleMeetingLink, setScheduleMeetingLink] = useState('');
+  const [scheduleLocation, setScheduleLocation] = useState('Online (Google Meet)');
 
   useEffect(() => {
     const fetchPipeline = async () => {
@@ -47,7 +54,19 @@ export default function CandidatePipeline() {
             const initialPipeline: CandidatePipelineItem[] = [
               { id: 'p1', recruiter_id: user?.id || 'rec1', student_id: mockStudents[0].id, stage: 'discovered', student: mockStudents[0], private_notes: 'CV đồ án xuất sắc, cần liên hệ tuần này.' },
               { id: 'p2', recruiter_id: user?.id || 'rec1', student_id: mockStudents[1].id, stage: 'shortlisted', student: mockStudents[1], private_notes: 'Đã xem Figma prototype đồ án ecommerce.' },
-              { id: 'p3', recruiter_id: user?.id || 'rec1', student_id: mockStudents[2].id, stage: 'interview', student: mockStudents[2], private_notes: 'Hẹn phỏng vấn 10:00 AM ngày 25/09.' }
+              { 
+                id: 'p3', 
+                recruiter_id: user?.id || 'rec1', 
+                student_id: mockStudents[2].id, 
+                stage: 'interview', 
+                student: mockStudents[2], 
+                private_notes: 'Hẹn phỏng vấn trao đổi chuyên sâu về Data Analyst.',
+                interview_date: '2026-09-26',
+                interview_time: '10:00',
+                meeting_link: 'https://meet.google.com/abc-defg-hij',
+                interview_location: 'Online (Google Meet)',
+                interview_status: 'scheduled'
+              }
             ];
             setPipeline(initialPipeline);
             localStorage.setItem(`pipeline_${user?.id || 'default'}`, JSON.stringify(initialPipeline));
@@ -81,13 +100,9 @@ export default function CandidatePipeline() {
     const updated = pipeline.map(item => item.id === itemId ? { ...item, stage: newStage, updated_at: new Date().toISOString() } : item);
     savePipelineToStorage(updated);
 
-    // Auto open Feedback Modal when moving candidate to 'interview' stage
-    if (newStage === 'interview' && itemToUpdate?.student) {
-      setFeedbackCandidate({
-        id: itemToUpdate.student_id,
-        full_name: itemToUpdate.student.full_name,
-        major: itemToUpdate.student.major
-      });
+    // Auto open Interview Schedule Modal or Feedback Modal when moving to 'interview'
+    if (newStage === 'interview' && itemToUpdate) {
+      handleOpenScheduleModal(itemToUpdate);
     }
   };
 
@@ -103,14 +118,42 @@ export default function CandidatePipeline() {
     setEditingItem(null);
   };
 
+  const handleOpenScheduleModal = (item: CandidatePipelineItem) => {
+    setScheduleItem(item);
+    setScheduleDate(item.interview_date || '2026-09-26');
+    setScheduleTime(item.interview_time || '10:00');
+    setScheduleMeetingLink(item.meeting_link || 'https://meet.google.com/abc-defg-hij');
+    setScheduleLocation(item.interview_location || 'Online (Google Meet)');
+  };
+
+  const handleSaveSchedule = () => {
+    if (!scheduleItem) return;
+    const updated = pipeline.map(item =>
+      item.id === scheduleItem.id
+        ? {
+            ...item,
+            interview_date: scheduleDate,
+            interview_time: scheduleTime,
+            meeting_link: scheduleMeetingLink,
+            interview_location: scheduleLocation,
+            interview_status: 'scheduled' as const,
+            stage: 'interview' as PipelineStage,
+            updated_at: new Date().toISOString()
+          }
+        : item
+    );
+    savePipelineToStorage(updated);
+    setScheduleItem(null);
+  };
+
   return (
     <div style={{ padding: '30px', width: '100%', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: '25px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
-            📊 Pipeline Quản Lý Ứng Viên
+            📊 Pipeline Quản Lý Ứng Viên & Lịch Phỏng Vấn
           </h1>
           <p style={{ color: '#64748b', margin: 0, fontSize: '14px' }}>
-            Theo dõi tiến trình tuyển dụng, chuyển giai đoạn ứng viên và lưu ghi chú đánh giá nội bộ.
+            Theo dõi tiến trình tuyển dụng, lên lịch phỏng vấn trực tiếp và gửi phản hồi đánh giá ứng viên.
           </p>
         </div>
 
@@ -164,6 +207,42 @@ export default function CandidatePipeline() {
                             </div>
                           )}
 
+                          {/* Interview Schedule Box if present */}
+                          {(item.stage === 'interview' || item.interview_date) && (
+                            <div style={{ backgroundColor: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px', padding: '8px 10px', marginBottom: '10px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#7c3aed', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                                <Calendar size={12} /> Lịch Phỏng Vấn:
+                              </div>
+                              {item.interview_date ? (
+                                <>
+                                  <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Clock size={12} color="#6d28d9" /> {item.interview_date} lúc {item.interview_time || '10:00'}
+                                  </div>
+                                  <div style={{ fontSize: '11px', color: '#4b5563', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <MapPin size={11} /> {item.interview_location || 'Online'}
+                                  </div>
+                                  {item.meeting_link && (
+                                    <a
+                                      href={item.meeting_link}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', fontSize: '11px', color: '#2563eb', fontWeight: 'bold', textDecoration: 'none' }}
+                                    >
+                                      <Video size={12} /> Vào cuộc họp (Meet)
+                                    </a>
+                                  )}
+                                </>
+                              ) : (
+                                <button
+                                  onClick={() => handleOpenScheduleModal(item)}
+                                  style={{ background: '#8b5cf6', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold', width: '100%', marginTop: '4px' }}
+                                >
+                                  + Hẹn Lịch Phỏng Vấn
+                                </button>
+                              )}
+                            </div>
+                          )}
+
                           {/* Private note preview */}
                           {item.private_notes && (
                             <div style={{ fontSize: '11px', backgroundColor: '#fffbeb', color: '#b45309', padding: '6px 8px', borderRadius: '4px', marginBottom: '10px', fontStyle: 'italic', borderLeft: '3px solid #f59e0b' }}>
@@ -173,19 +252,26 @@ export default function CandidatePipeline() {
 
                           {/* Actions */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9', gap: '6px', flexWrap: 'wrap' }}>
-                            <div style={{ display: 'flex', gap: '8px' }}>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                               <button
                                 onClick={() => handleOpenNoteModal(item)}
-                                style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
+                                style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px', padding: 0 }}
                               >
                                 <Edit3 size={12} /> Ghi chú
                               </button>
 
                               <button
-                                onClick={() => setFeedbackCandidate({ id: item.student_id, full_name: item.student?.full_name, major: item.student?.major })}
-                                style={{ background: 'none', border: 'none', color: '#8b5cf6', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0, fontWeight: 'bold' }}
+                                onClick={() => handleOpenScheduleModal(item)}
+                                style={{ background: 'none', border: 'none', color: '#7c3aed', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px', padding: 0, fontWeight: '500' }}
                               >
-                                <MessageSquarePlus size={12} /> Đánh giá (Feedback)
+                                <Calendar size={12} /> Hẹn lịch
+                              </button>
+
+                              <button
+                                onClick={() => setFeedbackCandidate({ id: item.student_id, full_name: item.student?.full_name, major: item.student?.major })}
+                                style={{ background: 'none', border: 'none', color: '#8b5cf6', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px', padding: 0, fontWeight: 'bold' }}
+                              >
+                                <MessageSquarePlus size={12} /> Feedback
                               </button>
                             </div>
 
@@ -216,6 +302,88 @@ export default function CandidatePipeline() {
             onClose={() => setFeedbackCandidate(null)}
             candidate={feedbackCandidate}
           />
+        )}
+
+        {/* Modal Đặt/Chỉnh Sửa Lịch Phỏng Vấn */}
+        {scheduleItem && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '500px' }}>
+              <h3 style={{ margin: '0 0 12px 0', color: '#0f172a', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                📅 Lên Lịch Phỏng Vấn: {scheduleItem.student?.full_name}
+              </h3>
+              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>
+                Cấu hình thời gian, đường dẫn cuộc họp và hình thức phỏng vấn cho ứng viên.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    📅 Ngày Phỏng Vấn
+                  </label>
+                  <input
+                    type="date"
+                    value={scheduleDate}
+                    onChange={e => setScheduleDate(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    ⏰ Giờ Phỏng Vấn
+                  </label>
+                  <input
+                    type="text"
+                    value={scheduleTime}
+                    onChange={e => setScheduleTime(e.target.value)}
+                    placeholder="VD: 10:00 AM hoặc 14:30"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    📍 Hình thức / Địa điểm
+                  </label>
+                  <input
+                    type="text"
+                    value={scheduleLocation}
+                    onChange={e => setScheduleLocation(e.target.value)}
+                    placeholder="VD: Online (Google Meet) hoặc Văn phòng Tầng 5"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    🔗 Link cuộc họp Trực tuyến (Meet / Zoom)
+                  </label>
+                  <input
+                    type="url"
+                    value={scheduleMeetingLink}
+                    onChange={e => setScheduleMeetingLink(e.target.value)}
+                    placeholder="https://meet.google.com/xxx-yyy-zzz"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                <button
+                  onClick={() => setScheduleItem(null)}
+                  style={{ padding: '8px 16px', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleSaveSchedule}
+                  style={{ padding: '8px 16px', backgroundColor: '#7c3aed', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  💾 Lưu Lịch Phỏng Vấn
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Modal Chỉnh sửa Ghi chú Nội bộ */}

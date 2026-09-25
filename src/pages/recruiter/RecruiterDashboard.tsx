@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthProvider';
 import { supabase } from '../../services/supabase';
+import RecruiterFeedbackModal from '../../components/recruiter/RecruiterFeedbackModal';
 import {
   Users,
   Briefcase,
@@ -12,7 +13,12 @@ import {
   FileText,
   ExternalLink,
   Search,
-  CheckCircle2
+  CheckCircle2,
+  Calendar,
+  Clock,
+  Video,
+  MapPin,
+  MessageSquarePlus
 } from 'lucide-react';
 import VerifiedBadge from '../../components/common/VerifiedBadge';
 
@@ -36,6 +42,18 @@ interface TalentCandidate {
   }>;
 }
 
+interface UpcomingInterviewItem {
+  id: string;
+  student_id: string;
+  student_name: string;
+  major: string;
+  interview_date: string;
+  interview_time: string;
+  meeting_link: string;
+  interview_location: string;
+  notes?: string;
+}
+
 export default function RecruiterDashboard() {
   const { user } = useAuth();
   const [candidates, setCandidates] = useState<TalentCandidate[]>([]);
@@ -50,6 +68,12 @@ export default function RecruiterDashboard() {
     scheduledInterviews: 8,
     hiredCandidates: 2
   });
+
+  // Feedback Modal State
+  const [feedbackCandidate, setFeedbackCandidate] = useState<{ id: string; full_name?: string; major?: string } | null>(null);
+
+  // Upcoming Interviews List
+  const [upcomingInterviews, setUpcomingInterviews] = useState<UpcomingInterviewItem[]>([]);
 
   useEffect(() => {
     const fetchTalentData = async () => {
@@ -120,6 +144,60 @@ export default function RecruiterDashboard() {
             scheduledInterviews: interviewCount,
             hiredCandidates: hiredCount
           });
+
+          // Load scheduled interviews from pipeline
+          const scheduledFromPipeline = localPipeline.filter((p: any) => p.stage === 'interview' || p.interview_date).map((p: any) => ({
+            id: p.id,
+            student_id: p.student_id,
+            student_name: p.student?.full_name || 'Ứng viên Sinh viên',
+            major: p.student?.major || 'Công Nghệ Thông Tin',
+            interview_date: p.interview_date || '2026-09-26',
+            interview_time: p.interview_time || '10:00 AM',
+            meeting_link: p.meeting_link || 'https://meet.google.com/abc-defg-hij',
+            interview_location: p.interview_location || 'Online (Google Meet)',
+            notes: p.private_notes
+          }));
+
+          if (scheduledFromPipeline.length > 0) {
+            setUpcomingInterviews(scheduledFromPipeline);
+          } else {
+            setUpcomingInterviews([
+              {
+                id: 'sch1',
+                student_id: 's3',
+                student_name: 'Lê Hoàng C',
+                major: 'Khoa học Dữ liệu',
+                interview_date: '2026-09-26',
+                interview_time: '10:00 AM',
+                meeting_link: 'https://meet.google.com/abc-defg-hij',
+                interview_location: 'Online (Google Meet)',
+                notes: 'Hẹn phỏng vấn vị trí Data Analyst Intern.'
+              },
+              {
+                id: 'sch2',
+                student_id: 's2',
+                student_name: 'Trần Thị B',
+                major: 'Thiết kế Đồ họa (UI/UX)',
+                interview_date: '2026-09-26',
+                interview_time: '02:30 PM',
+                meeting_link: 'https://meet.google.com/uvw-xyz-123',
+                interview_location: 'Online (Google Meet)',
+                notes: 'Phỏng vấn chuyên môn UI/UX & Review Figma Prototype.'
+              },
+              {
+                id: 'sch3',
+                student_id: 's1',
+                student_name: 'Nguyễn Văn A',
+                major: 'Công nghệ thông tin',
+                interview_date: '2026-09-27',
+                interview_time: '09:00 AM',
+                meeting_link: 'https://meet.google.com/qrs-tuv-456',
+                interview_location: 'Văn phòng Tầng 5 - Bitexco Tower',
+                notes: 'Phỏng vấn vòng 2 vị trí Fullstack Developer.'
+              }
+            ]);
+          }
+
         } else {
           // Fallback mock verified talent
           const mockTalents: TalentCandidate[] = [
@@ -168,6 +246,42 @@ export default function RecruiterDashboard() {
             }
           ];
           setCandidates(mockTalents);
+
+          setUpcomingInterviews([
+            {
+              id: 'sch1',
+              student_id: 'st3',
+              student_name: 'Lê Hoàng C',
+              major: 'Khoa học Dữ liệu',
+              interview_date: '2026-09-26',
+              interview_time: '10:00 AM',
+              meeting_link: 'https://meet.google.com/abc-defg-hij',
+              interview_location: 'Online (Google Meet)',
+              notes: 'Hẹn phỏng vấn vị trí Data Analyst Intern.'
+            },
+            {
+              id: 'sch2',
+              student_id: 'st2',
+              student_name: 'Trần Thị B',
+              major: 'Thiết kế Đồ họa (UI/UX)',
+              interview_date: '2026-09-26',
+              interview_time: '02:30 PM',
+              meeting_link: 'https://meet.google.com/uvw-xyz-123',
+              interview_location: 'Online (Google Meet)',
+              notes: 'Phỏng vấn chuyên môn UI/UX & Review Figma Prototype.'
+            },
+            {
+              id: 'sch3',
+              student_id: 'st1',
+              student_name: 'Nguyễn Văn A',
+              major: 'Công nghệ thông tin',
+              interview_date: '2026-09-27',
+              interview_time: '09:00 AM',
+              meeting_link: 'https://meet.google.com/qrs-tuv-456',
+              interview_location: 'Văn phòng Tầng 5 - Bitexco Tower',
+              notes: 'Phỏng vấn vòng 2 vị trí Fullstack Developer.'
+            }
+          ]);
         }
       } catch (err) {
         console.error("Recruiter dashboard fetch error:", err);
@@ -345,7 +459,7 @@ export default function RecruiterDashboard() {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '8px 10px', backgroundColor: '#f5f3ff', borderRadius: '6px' }}>
                     <span style={{ color: '#8b5cf6' }}>Lịch phỏng vấn:</span>
-                    <span style={{ fontWeight: 'bold', color: '#8b5cf6' }}>8 ứng viên</span>
+                    <span style={{ fontWeight: 'bold', color: '#8b5cf6' }}>{upcomingInterviews.length} ứng viên</span>
                   </div>
                 </div>
               </div>
@@ -360,7 +474,77 @@ export default function RecruiterDashboard() {
 
           </div>
 
-          {/* 3. Verified Talent Feed (Thay thế các bảng academic project rác cũ) */}
+          {/* 2.5 Upcoming Interview Schedule Section */}
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', marginBottom: '30px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Calendar size={20} color="#7c3aed" /> 📅 Lịch Phỏng Vấn Sắp Tới (Upcoming Interviews)
+                </h2>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                  Danh sách lịch phỏng vấn ứng viên đã xác nhận. Bạn có thể tham gia nhanh cuộc họp hoặc gửi phản hồi đánh giá.
+                </p>
+              </div>
+
+              <a
+                href="/recruiter/pipeline"
+                style={{ padding: '8px 14px', backgroundColor: '#f5f3ff', color: '#7c3aed', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid #ddd6fe' }}
+              >
+                <Kanban size={14} /> Quản lý tất cả trong Pipeline →
+              </a>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+              {upcomingInterviews.map(iv => (
+                <div key={iv.id} style={{ backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                      <div>
+                        <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a' }}>{iv.student_name}</div>
+                        <div style={{ fontSize: '12px', color: '#6b21a8', fontWeight: '500' }}>🎓 {iv.major}</div>
+                      </div>
+                      <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#d8b4fe', color: '#581c87', padding: '2px 8px', borderRadius: '10px' }}>
+                        Đã lên lịch
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#374151', marginBottom: '12px', backgroundColor: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #f3e8ff' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: '#6b21a8' }}>
+                        <Clock size={14} /> {iv.interview_date} lúc {iv.interview_time}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4b5563' }}>
+                        <MapPin size={14} /> {iv.interview_location}
+                      </div>
+                      {iv.notes && (
+                        <div style={{ fontSize: '11px', color: '#92400e', fontStyle: 'italic', marginTop: '2px' }}>
+                          📝 {iv.notes}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #e9d5ff', paddingTop: '12px' }}>
+                    <a
+                      href={iv.meeting_link}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ flex: 1, padding: '8px', backgroundColor: '#7c3aed', color: 'white', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', textDecoration: 'none', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                    >
+                      <Video size={14} /> Vào Meet
+                    </a>
+                    <button
+                      onClick={() => setFeedbackCandidate({ id: iv.student_id, full_name: iv.student_name, major: iv.major })}
+                      style={{ padding: '8px 12px', backgroundColor: '#ffffff', color: '#7c3aed', border: '1px solid #c084fc', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <MessageSquarePlus size={14} /> Feedback
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 3. Verified Talent Feed */}
           <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 4px 0' }}>
@@ -448,35 +632,28 @@ export default function RecruiterDashboard() {
                           alert(`Ứng viên ${candidate.full_name} đã có trong danh sách Đã Lưu!`);
                         } else {
                           const newSaved = {
-                            id: 'sc_' + Date.now(),
+                            id: `sc_${Date.now()}`,
                             recruiter_id: user?.id || 'rec1',
                             student_id: candidate.id,
-                            folder_name: candidate.major || 'Ứng viên tiềm năng',
-                            created_at: new Date().toISOString(),
-                            student: { id: candidate.id, full_name: candidate.full_name, major: candidate.major, university: candidate.university, gpa: candidate.gpa, skills: candidate.skills }
+                            folder_name: 'Shortlist Tiềm Năng',
+                            student: candidate,
+                            created_at: new Date().toISOString()
                           };
                           localStorage.setItem(`saved_candidates_${user?.id || 'default'}`, JSON.stringify([...localSaved, newSaved]));
-                          alert(`⭐ Đã lưu ứng viên ${candidate.full_name} vào thư mục!`);
+                          alert(`Đã lưu ứng viên ${candidate.full_name} vào thư mục Shortlist!`);
                         }
                       }}
-                      style={{ flex: 1, padding: '7px', backgroundColor: '#f5f3ff', color: '#8b5cf6', border: '1px solid #ddd6fe', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
+                      style={{ flex: 1, padding: '8px', backgroundColor: '#f1f5f9', color: '#1e293b', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
                     >
-                      <Star size={12} /> Lưu
+                      <Star size={14} color="#f59e0b" /> Lưu Hồ Sơ
                     </button>
 
                     <button
                       onClick={() => setSelectedCvCandidate(candidate)}
-                      style={{ flex: 1, padding: '7px', backgroundColor: '#f8fafc', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
+                      style={{ flex: 1, padding: '8px', backgroundColor: '#1e3a8a', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
                     >
-                      <FileText size={12} /> Full CV
+                      <FileText size={14} /> Xem Full Portfolio
                     </button>
-
-                    <a
-                      href={`mailto:${candidate.email}?subject=Mời%20Phỏng%20Vấn%20Tuyển%20Dụng&body=Chào%20${candidate.full_name},%20chúng%20tôi%20đã%20xem%20hồ%20sơ%20verified%20của%20bạn...`}
-                      style={{ padding: '7px 12px', backgroundColor: '#1e3a8a', color: 'white', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <Mail size={12} /> Mời phỏng vấn
-                    </a>
                   </div>
                 </div>
               ))}
@@ -485,64 +662,55 @@ export default function RecruiterDashboard() {
 
         </div>
 
-      {/* MODAL XEM FULL CV ỨNG VIÊN */}
+      {/* Modal Recruiter Feedback Loop */}
+      {feedbackCandidate && (
+        <RecruiterFeedbackModal
+          isOpen={!!feedbackCandidate}
+          onClose={() => setFeedbackCandidate(null)}
+          candidate={feedbackCandidate}
+        />
+      )}
+
+      {/* Modal Quick View Candidate CV / Verified Portfolio */}
       {selectedCvCandidate && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             
             {/* Modal Header */}
-            <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '25px', borderRadius: '16px 16px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: '#ffffff', color: '#1e3a8a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '24px', border: '3px solid #60a5fa' }}>
-                  {selectedCvCandidate.full_name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', color: 'white' }}>{selectedCvCandidate.full_name}</h2>
-                  <div style={{ fontSize: '13px', color: '#93c5fd', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <span>🎓 {selectedCvCandidate.university}</span>
-                    <span>•</span>
-                    <span>{selectedCvCandidate.major}</span>
-                  </div>
+            <div style={{ padding: '24px 30px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', borderRadius: '16px 16px 0 0' }}>
+              <div>
+                <h2 style={{ margin: '0 0 4px 0', fontSize: '20px', color: '#0f172a' }}>
+                  📄 Hồ Sơ Ứng Viên Verified: {selectedCvCandidate.full_name}
+                </h2>
+                <div style={{ fontSize: '13px', color: '#64748b' }}>
+                  {selectedCvCandidate.university} • Chuyên ngành {selectedCvCandidate.major}
                 </div>
               </div>
-              <button onClick={() => setSelectedCvCandidate(null)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '24px', cursor: 'pointer' }}>✖</button>
+              <button
+                onClick={() => setSelectedCvCandidate(null)}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}
+              >
+                ✕
+              </button>
             </div>
 
-            {/* Modal Content */}
-            <div style={{ padding: '30px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Modal Body */}
+            <div style={{ padding: '30px' }}>
               
-              {/* Highlight Metrics */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <div>
-                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Điểm GPA Học Tập</div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#047857', marginTop: '2px' }}>🎯 {selectedCvCandidate.gpa}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Đồ án Verified</div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1d4ed8', marginTop: '2px' }}>🛡️ {selectedCvCandidate.verified_projects_count} đồ án</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Liên hệ Email</div>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis' }}>✉️ {selectedCvCandidate.email || 'Chưa cập nhật'}</div>
-                </div>
+              {/* Profile Summary */}
+              <div style={{ marginBottom: '24px', backgroundColor: '#eff6ff', padding: '16px', borderRadius: '12px', border: '1px solid #bfdbfe' }}>
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e3a8a', textTransform: 'uppercase', marginBottom: '6px' }}>Giới thiệu ứng viên</div>
+                <p style={{ margin: 0, fontSize: '13px', color: '#1e293b', lineHeight: '1.6' }}>
+                  {selectedCvCandidate.bio}
+                </p>
               </div>
 
-              {/* Bio Section */}
-              {selectedCvCandidate.bio && (
-                <div>
-                  <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e3a8a', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Giới thiệu bản thân (About)</h4>
-                  <p style={{ fontSize: '13px', color: '#334155', lineHeight: '1.6', margin: 0, backgroundColor: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
-                    {selectedCvCandidate.bio}
-                  </p>
-                </div>
-              )}
-
               {/* Skills */}
-              <div>
-                <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e3a8a', margin: '0 0 10px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Kỹ năng chuyên môn (Technical Skills)</h4>
+              <div style={{ marginBottom: '24px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e3a8a', margin: '0 0 10px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Kỹ năng & Công nghệ chính</h4>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {selectedCvCandidate.skills?.map((sk, idx) => (
-                    <span key={idx} style={{ fontSize: '12px', fontWeight: 'bold', backgroundColor: '#eff6ff', color: '#1d4ed8', padding: '6px 12px', borderRadius: '20px', border: '1px solid #bfdbfe' }}>
+                    <span key={idx} style={{ fontSize: '12px', backgroundColor: '#f1f5f9', color: '#0f172a', padding: '4px 10px', borderRadius: '6px', fontWeight: '500' }}>
                       {sk}
                     </span>
                   ))}

@@ -136,6 +136,11 @@ export interface CandidatePipelineItem {
   job_id?: string;
   stage: PipelineStage;
   private_notes?: string;
+  interview_date?: string;
+  interview_time?: string;
+  meeting_link?: string;
+  interview_location?: string;
+  interview_status?: 'scheduled' | 'completed' | 'cancelled';
   created_at?: string;
   updated_at?: string;
   student?: StudentProfile;
