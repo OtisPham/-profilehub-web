@@ -332,23 +332,25 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Dynamic Profile Completion Bar */}
-        <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', marginBottom: '25px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
-            <span style={{ fontWeight: 'bold', color: '#1e3a8a', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              🛡️ Mức Độ Hoàn Thành Hồ Sơ: 
-              <span style={{ backgroundColor: completion >= 80 ? '#059669' : '#1e3a8a', color: 'white', padding: '2px 10px', borderRadius: '12px', fontSize: '12px' }}>
-                {completion}%
+        {/* Dynamic Profile Completion Bar (Only shown if completion < 100%) */}
+        {completion < 100 && (
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', marginBottom: '25px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
+              <span style={{ fontWeight: 'bold', color: '#1e3a8a', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                🛡️ Mức Độ Hoàn Thành Hồ Sơ: 
+                <span style={{ backgroundColor: completion >= 80 ? '#059669' : '#1e3a8a', color: 'white', padding: '2px 10px', borderRadius: '12px', fontSize: '12px' }}>
+                  {completion}%
+                </span>
               </span>
-            </span>
-            <span style={{ fontSize: '13px', color: '#64748b' }}>
-              {completion >= 80 ? '✓ Hồ sơ của bạn đạt chuẩn tối ưu' : 'Bổ sung thêm thông tin để nâng cao cơ hội kết nối Nhà tuyển dụng'}
-            </span>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>
+                {completion >= 80 ? '✓ Hồ sơ của bạn gần đạt chuẩn tối ưu' : 'Bổ sung thêm thông tin để nâng cao cơ hội kết nối Nhà tuyển dụng'}
+              </span>
+            </div>
+            <div style={{ width: '100%', height: '10px', backgroundColor: '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
+              <div style={{ width: `${completion}%`, height: '100%', backgroundColor: completion >= 80 ? '#10b981' : '#f59e0b', transition: 'width 0.5s ease' }}></div>
+            </div>
           </div>
-          <div style={{ width: '100%', height: '10px', backgroundColor: '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
-            <div style={{ width: `${completion}%`, height: '100%', backgroundColor: completion >= 80 ? '#10b981' : '#f59e0b', transition: 'width 0.5s ease' }}></div>
-          </div>
-        </div>
+        )}
 
         {/* Dynamic Real Stats Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '35px' }}>
