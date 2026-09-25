@@ -20,7 +20,6 @@ import {
   MapPin,
   MessageSquarePlus,
   Trash2,
-  Filter,
   RotateCcw
 } from 'lucide-react';
 import VerifiedBadge from '../../components/common/VerifiedBadge';
@@ -614,7 +613,7 @@ export default function RecruiterDashboard() {
                 </div>
 
                 {/* Day of Week Headers */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlignment: 'center', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px', textAlign: 'center' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px', textAlign: 'center' }}>
                   <div>T2</div>
                   <div>T3</div>
                   <div>T4</div>
