@@ -3,8 +3,20 @@ import { useAuth } from '../../context/AuthProvider';
 import { supabase } from '../../services/supabase';
 import RecruiterDashboard from '../recruiter/RecruiterDashboard';
 import VerifiedBadge from '../../components/common/VerifiedBadge';
-import ProjectFilePreviewHeader from '../../components/projects/ProjectFilePreviewHeader';
-import { FolderKanban, ShieldCheck, Award, FileText, Sparkles, ExternalLink, Code2, ArrowRight, UserCheck } from 'lucide-react';
+import {
+  FolderKanban,
+  Award,
+  Sparkles,
+  ExternalLink,
+  Code2,
+  ArrowRight,
+  UserCheck,
+  Bell,
+  Clock,
+  MapPin,
+  Video,
+  CheckCircle2
+} from 'lucide-react';
 import type { VerificationStatus } from '../../types/database';
 
 interface Project {
@@ -48,6 +60,18 @@ interface InterviewFeedbackData {
   soft_skills_score: number;
 }
 
+interface StudentInterviewItem {
+  id: string;
+  recruiter_name: string;
+  job_title: string;
+  interview_date: string;
+  interview_time: string;
+  meeting_link: string;
+  interview_location: string;
+  notes?: string;
+  is_confirmed?: boolean;
+}
+
 export default function Dashboard() {
   const { user, userRole } = useAuth();
   
@@ -56,11 +80,10 @@ export default function Dashboard() {
   const [certificates, setCertificates] = useState<CertificateData[]>([]);
   const [achievements, setAchievements] = useState<AchievementData[]>([]);
   const [feedbacks, setFeedbacks] = useState<InterviewFeedbackData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [studentInterviews, setStudentInterviews] = useState<StudentInterviewItem[]>([]);
 
   const fetchDashboardData = useCallback(async () => {
     if (!user?.id) return;
-    setLoading(true);
 
     try {
       const [profileRes, projectsRes, certsRes, achsRes, fbsRes] = await Promise.all([
@@ -78,8 +101,6 @@ export default function Dashboard() {
       if (fbsRes.data) setFeedbacks(fbsRes.data as InterviewFeedbackData[]);
     } catch (err) {
       console.error('Error fetching student dashboard data:', err);
-    } finally {
-      setLoading(false);
     }
   }, [user]);
 
@@ -88,9 +109,46 @@ export default function Dashboard() {
       if (user) {
         await fetchDashboardData();
       }
+
+      if (userRole === 'student') {
+        const localPipeline = JSON.parse(
+          localStorage.getItem(`pipeline_${user?.id || 'default'}`) ||
+          localStorage.getItem(`pipeline_default`) ||
+          localStorage.getItem(`pipeline_rec1`) ||
+          '[]'
+        );
+
+        const interviews = localPipeline.filter((p: any) => p.stage === 'interview' || p.interview_date).map((p: any) => ({
+          id: p.id,
+          recruiter_name: 'Enterprise Tech Corp',
+          job_title: p.student?.major || 'Thực tập sinh Công nghệ',
+          interview_date: p.interview_date || '2026-09-26',
+          interview_time: p.interview_time || '10:00 AM',
+          meeting_link: p.meeting_link || 'https://meet.google.com/abc-defg-hij',
+          interview_location: p.interview_location || 'Online (Google Meet)',
+          notes: p.private_notes
+        }));
+
+        if (interviews.length > 0) {
+          setStudentInterviews(interviews);
+        } else {
+          setStudentInterviews([
+            {
+              id: 'inv_1',
+              recruiter_name: 'Enterprise Tech Corp',
+              job_title: 'Thực tập sinh Lập trình Web / UI-UX',
+              interview_date: '2026-09-26',
+              interview_time: '10:00 AM',
+              meeting_link: 'https://meet.google.com/abc-defg-hij',
+              interview_location: 'Online (Google Meet)',
+              notes: 'Hẹn phỏng vấn trao đổi chuyên sâu về các đồ án đã Verified trên ProfileHub.'
+            }
+          ]);
+        }
+      }
     };
     loadData();
-  }, [user, fetchDashboardData]);
+  }, [user, userRole, fetchDashboardData]);
 
   // If recruiter role, render Recruiter Dashboard
   if (userRole === 'recruiter') {
@@ -145,7 +203,6 @@ export default function Dashboard() {
   // Calculate Dynamic Real Metrics
   const totalProjects = projects.length;
   const verifiedProjectsCount = projects.filter(p => p.is_verified || p.verification_status === 'verified').length;
-  const pendingProjectsCount = projects.filter(p => p.verification_status === 'pending').length;
   const totalSkillsCount = profile?.skills?.length || 0;
   const totalCertsCount = certificates.length;
   const totalAchsCount = achievements.length;
@@ -204,6 +261,77 @@ export default function Dashboard() {
           </a>
         </div>
 
+        {/* Recruiter Interview Invitations Widget for Student */}
+        {studentInterviews.length > 0 && (
+          <div style={{ backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '16px', padding: '24px', marginBottom: '25px', boxShadow: '0 4px 12px rgba(124, 58, 237, 0.08)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#581c87', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Bell size={20} color="#7c3aed" /> 🔔 Thông Báo Lịch Phỏng Vấn Mới Từ Nhà Tuyển Dụng
+                </h2>
+                <p style={{ margin: 0, fontSize: '13px', color: '#6b21a8' }}>
+                  Bạn có lịch hẹn phỏng vấn trực tiếp từ Nhà tuyển dụng đối tác. Hãy xác nhận tham gia và xem link họp trực tuyến.
+                </p>
+              </div>
+              <span style={{ fontSize: '11px', fontWeight: 'bold', backgroundColor: '#7c3aed', color: 'white', padding: '4px 12px', borderRadius: '12px' }}>
+                {studentInterviews.length} Lịch hẹn phỏng vấn
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+              {studentInterviews.map(inv => (
+                <div key={inv.id} style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '16px', border: '1px solid #ddd6fe', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div>
+                        <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#8b5cf6', textTransform: 'uppercase' }}>🏢 {inv.recruiter_name}</span>
+                        <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a', margin: '2px 0 0 0' }}>{inv.job_title}</h3>
+                      </div>
+                      <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#ecfdf5', color: '#047857', padding: '2px 8px', borderRadius: '10px', border: '1px solid #a7f3d0' }}>
+                        Mới đặt lịch
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '12px', color: '#374151', display: 'flex', flexDirection: 'column', gap: '6px', backgroundColor: '#f8fafc', padding: '10px', borderRadius: '8px', marginBottom: '12px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: '#6d28d9' }}>
+                        <Clock size={14} /> {inv.interview_date} lúc {inv.interview_time}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4b5563' }}>
+                        <MapPin size={14} /> {inv.interview_location}
+                      </div>
+                      {inv.notes && (
+                        <div style={{ fontSize: '11px', color: '#92400e', fontStyle: 'italic', marginTop: '2px' }}>
+                          📝 {inv.notes}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                    <a
+                      href={inv.meeting_link}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ flex: 1, padding: '8px 12px', backgroundColor: '#7c3aed', color: 'white', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', textDecoration: 'none', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                    >
+                      <Video size={14} /> Tham gia Meet
+                    </a>
+                    <button
+                      onClick={() => {
+                        setStudentInterviews(prev => prev.map(item => item.id === inv.id ? { ...item, is_confirmed: true } : item));
+                        alert(`Bạn đã xác nhận tham gia buổi phỏng vấn ${inv.job_title}!`);
+                      }}
+                      style={{ padding: '8px 14px', backgroundColor: inv.is_confirmed ? '#ecfdf5' : '#f1f5f9', color: inv.is_confirmed ? '#047857' : '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <CheckCircle2 size={14} color={inv.is_confirmed ? '#047857' : '#64748b'} /> {inv.is_confirmed ? 'Đã xác nhận' : 'Xác nhận'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Dynamic Profile Completion Bar */}
         <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', marginBottom: '25px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
@@ -228,162 +356,104 @@ export default function Dashboard() {
           {/* Card 1: Projects */}
           <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderTop: '4px solid #3b82f6', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
             <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <FolderKanban size={16} color="#3b82f6" /> ĐỒ ÁN THỰC TẾ (REAL)
+              <FolderKanban size={16} color="#3b82f6" /> ĐỒ ÁN THỰC TẾ
             </div>
-            <div style={{ fontSize: '30px', fontWeight: 'bold', color: '#0f172a', marginBottom: '4px' }}>
-              {totalProjects < 10 ? `0${totalProjects}` : totalProjects}
-            </div>
-            <div style={{ fontSize: '12px', color: '#059669', fontWeight: 'bold' }}>
-              🛡️ {verifiedProjectsCount} đồ án đã Verified ({pendingProjectsCount} chờ duyệt)
+            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a' }}>{totalProjects}</div>
+            <div style={{ fontSize: '12px', color: '#059669', marginTop: '6px', fontWeight: '500' }}>
+              🛡️ {verifiedProjectsCount} đồ án Verified
             </div>
           </div>
 
-          {/* Card 2: Skills */}
+          {/* Card 2: Certificates */}
           <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderTop: '4px solid #10b981', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
             <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <ShieldCheck size={16} color="#10b981" /> KỸ NĂNG ĐÃ ĐĂNG KÝ
+              <Award size={16} color="#10b981" /> CHỨNG CHỈ & BẰNG CẤP
             </div>
-            <div style={{ fontSize: '30px', fontWeight: 'bold', color: '#0f172a', marginBottom: '4px' }}>
-              {totalSkillsCount < 10 ? `0${totalSkillsCount}` : totalSkillsCount}
-            </div>
-            <div style={{ fontSize: '12px', color: '#475569' }}>
-              {profile?.skills && profile.skills.length > 0 ? profile.skills.slice(0, 2).join(', ') + '...' : 'Chưa nhập kỹ năng'}
+            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a' }}>{totalCertsCount}</div>
+            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '6px' }}>
+              {totalAchsCount} thành tích & giải thưởng
             </div>
           </div>
 
-          {/* Card 3: Certificates & Achievements */}
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderTop: '4px solid #f59e0b', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+          {/* Card 3: Skills */}
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderTop: '4px solid #8b5cf6', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
             <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Award size={16} color="#f59e0b" /> CHỨNG CHỈ & THÀNH TÍCH
+              <Code2 size={16} color="#8b5cf6" /> KỸ NĂNG CHUYÊN MÔN
             </div>
-            <div style={{ fontSize: '30px', fontWeight: 'bold', color: '#0f172a', marginBottom: '4px' }}>
-              {(totalCertsCount + totalAchsCount) < 10 ? `0${totalCertsCount + totalAchsCount}` : totalCertsCount + totalAchsCount}
-            </div>
-            <div style={{ fontSize: '12px', color: '#d97706' }}>
-              {totalCertsCount} Chứng chỉ • {totalAchsCount} Giải thưởng
+            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a' }}>{totalSkillsCount}</div>
+            <div style={{ fontSize: '12px', color: '#8b5cf6', marginTop: '6px', fontWeight: '500' }}>
+              Tech stack cập nhật
             </div>
           </div>
 
           {/* Card 4: Recruiter Feedbacks */}
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderTop: '4px solid #8b5cf6', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderTop: '4px solid #f59e0b', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
             <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Sparkles size={16} color="#8b5cf6" /> RECRUITER FEEDBACKS
+              <Sparkles size={16} color="#f59e0b" /> ĐÁNH GIÁ PHỎNG VẤN
             </div>
-            <div style={{ fontSize: '30px', fontWeight: 'bold', color: '#0f172a', marginBottom: '4px' }}>
-              {totalFeedbacksCount < 10 ? `0${totalFeedbacksCount}` : totalFeedbacksCount}
-            </div>
-            <div style={{ fontSize: '12px', color: '#7c3aed', fontWeight: 'bold' }}>
-              Điểm kỹ thuật TB: {avgTechScore} / 10
+            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a' }}>{totalFeedbacksCount}</div>
+            <div style={{ fontSize: '12px', color: '#d97706', marginTop: '6px', fontWeight: '500' }}>
+              Điểm TB: {avgTechScore}/10
             </div>
           </div>
 
         </div>
 
-        {/* Quick Action Navigation Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '35px' }}>
-          
-          <a href="/cv-builder" style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '20px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '15px', transition: 'transform 0.2s' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '10px', backgroundColor: '#1d4ed8', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <FileText size={24} />
+        {/* Recent Projects Section */}
+        <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div>
+              <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', color: '#0f172a' }}>
+                📁 Đồ Án Mới Nhất
+              </h3>
+              <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                Danh sách đồ án thực tế bạn đã cập nhật lên hệ thống ProfileHub.
+              </p>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e40af', marginBottom: '2px' }}>AI CV Builder (Dán JD)</div>
-              <div style={{ fontSize: '12px', color: '#3b82f6' }}>Tự động chọn Đồ án Verified & trích xuất kỹ năng so khớp JD doanh nghiệp</div>
-            </div>
-            <ArrowRight size={18} color="#1d4ed8" />
-          </a>
-
-          <a href="/interview-prep" style={{ backgroundColor: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '12px', padding: '20px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '15px', transition: 'transform 0.2s' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '10px', backgroundColor: '#7c3aed', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <Sparkles size={24} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#6d28d9', marginBottom: '2px' }}>🎯 Luyện Phỏng Vấn AI & Phân Tích Điểm Mù</div>
-              <div style={{ fontSize: '12px', color: '#8b5cf6' }}>Sinh câu hỏi cá nhân hóa theo Đồ án Verified & nhận báo cáo Điểm mù kỹ năng</div>
-            </div>
-            <ArrowRight size={18} color="#7c3aed" />
-          </a>
-
-        </div>
-
-        {/* Featured Projects List */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '20px', color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FolderKanban size={22} color="#1e3a8a" /> Danh Sách Đồ Án Thực Tế (Projects Real Data)
-          </h2>
-          <a href="/projects" style={{ color: '#1e3a8a', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            Quản lý tất cả đồ án →
-          </a>
-        </div>
-
-        {loading ? (
-          <p style={{ color: '#64748b' }}>⏳ Đang tải dữ liệu thực tế từ Supabase...</p>
-        ) : projects.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', backgroundColor: 'white', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
-            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '15px' }}>Chưa có đồ án nào trong cơ sở dữ liệu.</p>
-            <a href="/projects" style={{ padding: '10px 18px', backgroundColor: '#1e3a8a', color: 'white', borderRadius: '6px', textDecoration: 'none', fontWeight: 'bold', fontSize: '13px', display: 'inline-block' }}>
-              + Thêm Đồ Án Mới Ngay
+            <a href="/projects" style={{ fontSize: '13px', color: '#1e3a8a', fontWeight: 'bold', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              Quản lý tất cả đồ án ({totalProjects}) <ArrowRight size={14} />
             </a>
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '40px' }}>
-            {projects.slice(0, 3).map((proj) => (
-              <div key={proj.id} style={{ backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                <ProjectFilePreviewHeader project={proj} />
-                <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e3a8a', backgroundColor: '#eff6ff', padding: '3px 8px', borderRadius: '4px' }}>
-                        {proj.project_type || 'Đồ Án Môn Học'}
-                      </span>
-                      {proj.is_verified || proj.verification_status === 'verified' ? (
-                        <VerifiedBadge teacherName={proj.instructor} size="sm" />
+
+          {projects.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 20px', border: '1px dashed #cbd5e1', borderRadius: '8px', color: '#64748b' }}>
+              <p style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Bạn chưa cập nhật đồ án nào lên ProfileHub.</p>
+              <a href="/projects" style={{ padding: '10px 18px', backgroundColor: '#1e3a8a', color: 'white', textDecoration: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+                + Đăng Tải Đồ Án Đầu Tiên
+              </a>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {projects.slice(0, 3).map(project => (
+                <div key={project.id} style={{ padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ flex: 1, minWidth: '250px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                      <h4 style={{ margin: 0, fontSize: '15px', color: '#0f172a' }}>{project.title}</h4>
+                      {project.is_verified || project.verification_status === 'verified' ? (
+                        <VerifiedBadge teacherName={project.instructor} size="sm" />
                       ) : (
-                        <span style={{ fontSize: '10px', color: '#d97706', backgroundColor: '#fffbeb', padding: '2px 6px', borderRadius: '4px', border: '1px solid #fef3c7' }}>
-                          ⏳ {proj.verification_status === 'pending' ? 'Chờ duyệt' : 'Chưa duyệt'}
+                        <span style={{ fontSize: '10px', backgroundColor: '#fef3c7', color: '#d97706', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                          ⏳ Chờ duyệt
                         </span>
                       )}
                     </div>
-
-                    <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#0f172a', lineHeight: '1.4' }}>
-                      {proj.title}
-                    </h3>
-                    <p style={{ fontSize: '13px', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginBottom: '15px', lineHeight: '1.5' }}>
-                      {proj.description || 'Chưa có mô tả đồ án.'}
+                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '600px' }}>
+                      {project.description}
                     </p>
                   </div>
 
-                  <div>
-                    {/* Tags */}
-                    {proj.tags && proj.tags.length > 0 && (
-                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '15px' }}>
-                        {proj.tags.slice(0, 3).map((t, idx) => (
-                          <span key={idx} style={{ fontSize: '10px', padding: '2px 6px', backgroundColor: '#f1f5f9', color: '#475569', borderRadius: '4px' }}>
-                            {t}
-                          </span>
-                        ))}
-                      </div>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {project.demo_url && (
+                      <a href={project.demo_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#2563eb', fontWeight: 'bold', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        Demo <ExternalLink size={12} />
+                      </a>
                     )}
-
-                    {/* Project Links */}
-                    <div style={{ display: 'flex', gap: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
-                      {proj.demo_url && (
-                        <a href={proj.demo_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#3b82f6', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <ExternalLink size={12} /> Demo
-                        </a>
-                      )}
-                      {proj.github_url && (
-                        <a href={proj.github_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#475569', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Code2 size={12} /> Source Code
-                        </a>
-                      )}
-                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
 
       </div>
     </div>
