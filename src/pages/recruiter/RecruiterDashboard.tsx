@@ -182,6 +182,18 @@ export default function RecruiterDashboard() {
     };
 
     fetchTalentData();
+
+    const handleSync = () => {
+      fetchTalentData();
+    };
+
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('focus', handleSync);
+
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
   }, [user?.id]);
 
   const handleDeleteInterview = (id: string) => {

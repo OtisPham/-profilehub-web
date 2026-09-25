@@ -52,6 +52,17 @@ export const saveSharedPipeline = (items: CandidatePipelineItem[], userId?: stri
   if (userId) {
     localStorage.setItem(`pipeline_${userId}`, jsonStr);
   }
+  // Dispatch custom storage event for live tab & component sync
+  window.dispatchEvent(new Event('storage'));
+};
+
+export const addToSharedPipeline = (newItem: CandidatePipelineItem, userId?: string): boolean => {
+  const current = getSharedPipeline(userId);
+  const exists = current.some(p => p.student_id === newItem.student_id || (newItem.id && p.id === newItem.id));
+  if (exists) return false;
+  const updated = [newItem, ...current];
+  saveSharedPipeline(updated, userId);
+  return true;
 };
 
 export const updateInterviewStatusByStudent = (studentId: string, status: 'confirmed' | 'cancelled') => {

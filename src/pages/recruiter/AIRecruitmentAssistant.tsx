@@ -10,6 +10,7 @@ import {
   type CandidateMatchResult
 } from '../../services/aiRecruitmentService';
 import { Sparkles, Mail, Star, Kanban, Edit3 } from 'lucide-react';
+import { addToSharedPipeline } from '../../utils/pipelineSync';
 
 interface CandidateProfileData {
   id: string;
@@ -449,21 +450,19 @@ export default function AIRecruitmentAssistant() {
 
                         <button
                           onClick={() => {
-                            const localPipeline = JSON.parse(localStorage.getItem(`pipeline_${user?.id || 'default'}`) || '[]');
-                            const alreadyIn = localPipeline.some((p: { student_id?: string }) => p.student_id === res.candidateId);
-                            if (alreadyIn) {
-                              alert(`Ứng viên ${res.candidateName} đã có trong Pipeline!`);
-                            } else {
-                              const newItem = {
-                                id: 'p_' + Date.now(),
-                                recruiter_id: user?.id || 'rec1',
-                                student_id: res.candidateId,
-                                stage: 'shortlisted',
-                                student: { id: res.candidateId, full_name: res.candidateName, major: candData?.major, university: candData?.university, gpa: candData?.gpa, skills: candData?.skills },
-                                private_notes: `AI Match score ${res.matchScore}% cho vị trí ${hiringBrief?.position}`
-                              };
-                              localStorage.setItem(`pipeline_${user?.id || 'default'}`, JSON.stringify([...localPipeline, newItem]));
+                            const newItem = {
+                              id: 'p_' + Date.now(),
+                              recruiter_id: user?.id || 'rec1',
+                              student_id: res.candidateId,
+                              stage: 'shortlisted' as const,
+                              student: { id: res.candidateId, full_name: res.candidateName, major: candData?.major, university: candData?.university, gpa: candData?.gpa, skills: candData?.skills },
+                              private_notes: `AI Match score ${res.matchScore}% cho vị trí ${hiringBrief?.position}`
+                            };
+                            const added = addToSharedPipeline(newItem, user?.id);
+                            if (added) {
                               alert(`📊 Đã thêm ${res.candidateName} vào cột Shortlisted (Pipeline)!`);
+                            } else {
+                              alert(`Ứng viên ${res.candidateName} đã có trong Pipeline!`);
                             }
                           }}
                           style={{ flex: 1, padding: '8px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}

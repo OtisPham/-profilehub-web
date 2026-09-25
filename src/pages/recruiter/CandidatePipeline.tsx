@@ -58,6 +58,19 @@ export default function CandidatePipeline() {
     };
 
     fetchPipeline();
+
+    const handleSync = () => {
+      const shared = getSharedPipeline(user?.id);
+      setPipeline(shared);
+    };
+
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('focus', handleSync);
+
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
   }, [user]);
 
   const savePipelineToStorage = (updated: CandidatePipelineItem[]) => {

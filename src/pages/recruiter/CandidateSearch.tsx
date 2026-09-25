@@ -4,6 +4,7 @@ import { supabase } from '../../services/supabase';
 import VerifiedBadge from '../../components/common/VerifiedBadge';
 import { Search, ShieldCheck, Mail, FileText, ExternalLink, Code2 } from 'lucide-react';
 import VSCodeViewerModal from '../../components/common/VSCodeViewerModal';
+import { addToSharedPipeline } from '../../utils/pipelineSync';
 
 interface VerifiedStudentCandidate {
   id: string;
@@ -296,21 +297,19 @@ export default function CandidateSearch() {
 
                       <button
                         onClick={() => {
-                          const localPipeline = JSON.parse(localStorage.getItem(`pipeline_${user?.id || 'default'}`) || '[]');
-                          const alreadyIn = localPipeline.some((p: { student_id?: string }) => p.student_id === candidate.id);
-                          if (alreadyIn) {
-                            alert(`Ứng viên ${candidate.full_name} đã có trong Pipeline!`);
-                          } else {
-                            const newItem = {
-                              id: 'p_' + Date.now(),
-                              recruiter_id: user?.id || 'rec1',
-                              student_id: candidate.id,
-                              stage: 'discovered',
-                              student: { id: candidate.id, full_name: candidate.full_name, major: candidate.major, university: candidate.university, gpa: candidate.gpa, skills: candidate.skills },
-                              private_notes: 'Tìm thấy từ trang Search'
-                            };
-                            localStorage.setItem(`pipeline_${user?.id || 'default'}`, JSON.stringify([...localPipeline, newItem]));
+                          const newItem = {
+                            id: 'p_' + Date.now(),
+                            recruiter_id: user?.id || 'rec1',
+                            student_id: candidate.id,
+                            stage: 'discovered' as const,
+                            student: { id: candidate.id, full_name: candidate.full_name, major: candidate.major, university: candidate.university, gpa: candidate.gpa, skills: candidate.skills },
+                            private_notes: 'Tìm thấy từ trang Search'
+                          };
+                          const added = addToSharedPipeline(newItem, user?.id);
+                          if (added) {
                             alert(`📊 Đã thêm ${candidate.full_name} vào cột Ứng viên mới (Pipeline)!`);
+                          } else {
+                            alert(`Ứng viên ${candidate.full_name} đã có trong Pipeline!`);
                           }
                         }}
                         style={{ flex: 1, padding: '8px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
