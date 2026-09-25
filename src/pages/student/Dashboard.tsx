@@ -131,18 +131,7 @@ export default function Dashboard() {
         if (interviews.length > 0) {
           setStudentInterviews(interviews);
         } else {
-          setStudentInterviews([
-            {
-              id: 'inv_1',
-              recruiter_name: 'Enterprise Tech Corp',
-              job_title: 'Thực tập sinh Lập trình Web / UI-UX',
-              interview_date: '2026-09-26',
-              interview_time: '10:00 AM',
-              meeting_link: 'https://meet.google.com/abc-defg-hij',
-              interview_location: 'Online (Google Meet)',
-              notes: 'Hẹn phỏng vấn trao đổi chuyên sâu về các đồ án đã Verified trên ProfileHub.'
-            }
-          ]);
+          setStudentInterviews([]);
         }
       }
     };

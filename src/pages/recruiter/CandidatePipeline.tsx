@@ -4,7 +4,7 @@ import { supabase } from '../../services/supabase';
 import RecruiterFeedbackModal from '../../components/recruiter/RecruiterFeedbackModal';
 import { getSharedPipeline, saveSharedPipeline } from '../../utils/pipelineSync';
 import { User, Edit3, MessageSquarePlus, Calendar, Clock, Video, MapPin, Trash2 } from 'lucide-react';
-import type { PipelineStage, CandidatePipelineItem, StudentProfile } from '../../types/database';
+import type { PipelineStage, CandidatePipelineItem } from '../../types/database';
 
 const STAGES: { id: PipelineStage; label: string; color: string; bg: string }[] = [
   { id: 'discovered', label: 'Ứng viên mới', color: '#64748b', bg: '#f1f5f9' },
@@ -47,32 +47,7 @@ export default function CandidatePipeline() {
             setPipeline(dbItems);
             saveSharedPipeline(dbItems, user?.id);
           } else {
-            const { data: students } = await supabase.from('student_profiles').select('*');
-            const mockStudents: StudentProfile[] = students && students.length > 0 ? students : [
-              { id: 's1', full_name: 'Nguyễn Văn A', major: 'Công nghệ thông tin', university: 'ĐH Bách Khoa', gpa: '3.6/4.0', skills: ['ReactJS', 'Node.js', 'TypeScript'] },
-              { id: 's2', full_name: 'Trần Thị B', major: 'Thiết kế Đồ họa (UI/UX)', university: 'ĐH Kiến Trúc', gpa: '3.8/4.0', skills: ['Figma', 'User Research', 'UI/UX'] },
-              { id: 's3', full_name: 'Lê Hoàng C', major: 'Khoa học Dữ liệu', university: 'ĐH KHTN', gpa: '3.5/4.0', skills: ['Python', 'SQL', 'Machine Learning'] }
-            ];
-
-            const initialPipeline: CandidatePipelineItem[] = [
-              { id: 'p1', recruiter_id: user?.id || 'rec1', student_id: mockStudents[0].id, stage: 'discovered', student: mockStudents[0], private_notes: 'CV đồ án xuất sắc, cần liên hệ tuần này.' },
-              { id: 'p2', recruiter_id: user?.id || 'rec1', student_id: mockStudents[1].id, stage: 'shortlisted', student: mockStudents[1], private_notes: 'Đã xem Figma prototype đồ án ecommerce.' },
-              { 
-                id: 'p3', 
-                recruiter_id: user?.id || 'rec1', 
-                student_id: mockStudents[2].id, 
-                stage: 'interview', 
-                student: mockStudents[2], 
-                private_notes: 'Hẹn phỏng vấn trao đổi chuyên sâu về Data Analyst.',
-                interview_date: '2026-09-26',
-                interview_time: '10:00 AM',
-                meeting_link: 'https://meet.google.com/abc-defg-hij',
-                interview_location: 'Online (Google Meet)',
-                interview_status: 'confirmed'
-              }
-            ];
-            setPipeline(initialPipeline);
-            saveSharedPipeline(initialPipeline, user?.id);
+            setPipeline([]);
           }
         }
       } catch (err) {

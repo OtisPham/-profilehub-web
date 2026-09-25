@@ -167,127 +167,12 @@ export default function RecruiterDashboard() {
           if (scheduledFromPipeline.length > 0) {
             setUpcomingInterviews(scheduledFromPipeline);
           } else {
-            setUpcomingInterviews([
-              {
-                id: 'sch1',
-                student_id: 's3',
-                student_name: 'Lê Hoàng C',
-                major: 'Khoa học Dữ liệu',
-                interview_date: '2026-09-26',
-                interview_time: '10:00 AM',
-                meeting_link: 'https://meet.google.com/abc-defg-hij',
-                interview_location: 'Online (Google Meet)',
-                notes: 'Hẹn phỏng vấn vị trí Data Analyst Intern.'
-              },
-              {
-                id: 'sch2',
-                student_id: 's2',
-                student_name: 'Trần Thị B',
-                major: 'Thiết kế Đồ họa (UI/UX)',
-                interview_date: '2026-09-26',
-                interview_time: '02:30 PM',
-                meeting_link: 'https://meet.google.com/uvw-xyz-123',
-                interview_location: 'Online (Google Meet)',
-                notes: 'Phỏng vấn chuyên môn UI/UX & Review Figma Prototype.'
-              },
-              {
-                id: 'sch3',
-                student_id: 's1',
-                student_name: 'Nguyễn Văn A',
-                major: 'Công nghệ thông tin',
-                interview_date: '2026-09-27',
-                interview_time: '09:00 AM',
-                meeting_link: 'https://meet.google.com/qrs-tuv-456',
-                interview_location: 'Văn phòng Tầng 5 - Bitexco Tower',
-                notes: 'Phỏng vấn vòng 2 vị trí Fullstack Developer.'
-              }
-            ]);
+            setUpcomingInterviews([]);
           }
 
         } else {
-          // Fallback mock verified talent
-          const mockTalents: TalentCandidate[] = [
-            {
-              id: 'st1',
-              full_name: 'Nguyễn Văn A',
-              university: 'ĐH Bách Khoa TP.HCM',
-              major: 'Công Nghệ Thông Tin',
-              gpa: '3.8 / 4.0',
-              email: 'nguyenvana@gmail.com',
-              bio: 'Chuyên môn sâu về ReactJS, TypeScript và xây dựng giao diện người dùng tối ưu trải nghiệm.',
-              skills: ['ReactJS', 'TypeScript', 'Node.js', 'Tailwind', 'Git'],
-              verified_projects_count: 2,
-              projects: [
-                { id: 'p1', title: 'Hệ thống Quản lý Đào tạo Trực tuyến', description: 'Đồ án Chuyên ngành xếp loại A, được Giảng viên kiểm định.', demo_url: 'https://demo.com', instructor: 'TS. Nguyễn Văn B', is_verified: true },
-                { id: 'p2', title: 'Ứng dụng Thương mại Điện tử Fullstack', description: 'Đồ án tốt nghiệp đạt điểm 9.5/10.', demo_url: 'https://demo2.com', instructor: 'PGS. TS. Trần C', is_verified: true }
-              ]
-            },
-            {
-              id: 'st2',
-              full_name: 'Trần Thị B',
-              university: 'ĐH Kiến Trúc TP.HCM',
-              major: 'Thiết Kế Đồ Họa (UI/UX)',
-              gpa: '3.9 / 4.0',
-              email: 'tranthib@gmail.com',
-              bio: 'Nhiệt huyết với thiết kế sản phẩm số, thạo Figma, User Research và xây dựng Design System.',
-              skills: ['Figma', 'UI/UX', 'User Research', 'Photoshop', 'Wireframing'],
-              verified_projects_count: 3,
-              projects: [
-                { id: 'p3', title: 'Design System cho Mobile Banking App', description: 'Bộ thiết kế quy chuẩn 100+ màn hình được hội đồng đánh giá cao.', demo_url: 'https://figma.com', instructor: 'ThS. Lê D', is_verified: true }
-              ]
-            },
-            {
-              id: 'st3',
-              full_name: 'Lê Hoàng C',
-              university: 'ĐH Khoa Học Tự Nhiên',
-              major: 'Khoa Học Dữ Liệu',
-              gpa: '3.6 / 4.0',
-              email: 'lehoangc@gmail.com',
-              bio: 'Thế mạnh về xử lý dữ liệu lớn, xây dựng mô hình Học máy (Machine Learning) và SQL.',
-              skills: ['Python', 'SQL', 'Machine Learning', 'Pandas', 'PostgreSQL'],
-              verified_projects_count: 1,
-              projects: [
-                { id: 'p4', title: 'Mô hình Dự đoán Nhu cầu Tuyển dụng Doanh nghiệp', description: 'Nghiên cứu khoa học sinh viên đạt giải Nhì cấp Trường.', demo_url: 'https://github.com', instructor: 'TS. Phạm E', is_verified: true }
-              ]
-            }
-          ];
-          setCandidates(mockTalents);
-
-          setUpcomingInterviews([
-            {
-              id: 'sch1',
-              student_id: 'st3',
-              student_name: 'Lê Hoàng C',
-              major: 'Khoa học Dữ liệu',
-              interview_date: '2026-09-26',
-              interview_time: '10:00 AM',
-              meeting_link: 'https://meet.google.com/abc-defg-hij',
-              interview_location: 'Online (Google Meet)',
-              notes: 'Hẹn phỏng vấn vị trí Data Analyst Intern.'
-            },
-            {
-              id: 'sch2',
-              student_id: 'st2',
-              student_name: 'Trần Thị B',
-              major: 'Thiết kế Đồ họa (UI/UX)',
-              interview_date: '2026-09-26',
-              interview_time: '02:30 PM',
-              meeting_link: 'https://meet.google.com/uvw-xyz-123',
-              interview_location: 'Online (Google Meet)',
-              notes: 'Phỏng vấn chuyên môn UI/UX & Review Figma Prototype.'
-            },
-            {
-              id: 'sch3',
-              student_id: 'st1',
-              student_name: 'Nguyễn Văn A',
-              major: 'Công nghệ thông tin',
-              interview_date: '2026-09-27',
-              interview_time: '09:00 AM',
-              meeting_link: 'https://meet.google.com/qrs-tuv-456',
-              interview_location: 'Văn phòng Tầng 5 - Bitexco Tower',
-              notes: 'Phỏng vấn vòng 2 vị trí Fullstack Developer.'
-            }
-          ]);
+          setCandidates([]);
+          setUpcomingInterviews([]);
         }
       } catch (err) {
         console.error("Recruiter dashboard fetch error:", err);
@@ -373,6 +258,28 @@ export default function RecruiterDashboard() {
               </a>
             </div>
           </div>
+
+          {/* Candidate Confirmation Notification Alert Banner */}
+          {upcomingInterviews.some(i => i.interview_status === 'confirmed') && (
+            <div style={{ backgroundColor: '#ecfdf5', border: '1px solid #6ee7b7', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(16, 185, 129, 0.15)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCircle2 size={22} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#065f46' }}>
+                    🎉 Thông báo xác nhận phỏng vấn từ ứng viên!
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#047857', marginTop: '2px' }}>
+                    Ứng viên <strong>{upcomingInterviews.filter(i => i.interview_status === 'confirmed').map(i => i.student_name).join(', ')}</strong> đã xác nhận tham gia lịch phỏng vấn!
+                  </div>
+                </div>
+              </div>
+              <a href="/recruiter/pipeline" style={{ backgroundColor: '#059669', color: 'white', padding: '8px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', textDecoration: 'none' }}>
+                Xem Pipeline →
+              </a>
+            </div>
+          )}
 
           {/* 1. Executive Recruitment KPI Cockpit (5 Metrics) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '30px' }}>

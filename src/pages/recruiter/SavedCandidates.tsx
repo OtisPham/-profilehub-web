@@ -21,27 +21,7 @@ export default function SavedCandidates() {
         if (localSaved) {
           setSavedCandidates(JSON.parse(localSaved));
         } else {
-          // Initial default saved candidates mock
-          const defaultSaved: SavedCandidate[] = [
-            {
-              id: 'sc1',
-              recruiter_id: user?.id || 'rec1',
-              student_id: 's1',
-              folder_name: 'Frontend Intern',
-              created_at: new Date().toISOString(),
-              student: { id: 's1', full_name: 'Nguyễn Văn A', major: 'Công nghệ thông tin', university: 'ĐH Bách Khoa', gpa: '3.6/4.0', skills: ['ReactJS', 'Node.js', 'TypeScript', 'Tailwind'] }
-            },
-            {
-              id: 'sc2',
-              recruiter_id: user?.id || 'rec1',
-              student_id: 's2',
-              folder_name: 'UI/UX Design',
-              created_at: new Date().toISOString(),
-              student: { id: 's2', full_name: 'Trần Thị B', major: 'Thiết kế Đồ họa', university: 'ĐH Kiến Trúc', gpa: '3.8/4.0', skills: ['Figma', 'User Research', 'Prototyping'] }
-            }
-          ];
-          setSavedCandidates(defaultSaved);
-          localStorage.setItem(`saved_candidates_${user?.id || 'default'}`, JSON.stringify(defaultSaved));
+          setSavedCandidates([]);
         }
       } catch (err) {
         console.error("Fetch saved candidates error:", err);

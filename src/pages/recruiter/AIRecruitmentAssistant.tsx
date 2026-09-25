@@ -85,54 +85,7 @@ export default function AIRecruitmentAssistant() {
 
           setCandidatesList(formatted);
         } else {
-          // Fallback mock candidates
-          const mockCandidates: CandidateProfileData[] = [
-            {
-              id: 'c1',
-              full_name: 'Nguyễn Văn A',
-              university: 'ĐH Bách Khoa',
-              major: 'Công nghệ thông tin',
-              gpa: '3.8 / 4.0',
-              email: 'nguyenvana@gmail.com',
-              skills: ['ReactJS', 'TypeScript', 'Node.js', 'Git', 'Tailwind'],
-              verified_projects_count: 2,
-              projects: [
-                { title: 'Website E-commerce Fullstack', is_verified: true },
-                { title: 'Hệ thống Quản lý Sinh viên', is_verified: true },
-                { title: 'Ứng dụng Chat realtime', is_verified: false }
-              ]
-            },
-            {
-              id: 'c2',
-              full_name: 'Trần Thị B',
-              university: 'ĐH Kiến Trúc',
-              major: 'Thiết kế Đồ họa (UI/UX)',
-              gpa: '3.9 / 4.0',
-              email: 'tranthib@gmail.com',
-              skills: ['Figma', 'UI/UX', 'User Research', 'Photoshop', 'Wireframing'],
-              verified_projects_count: 3,
-              projects: [
-                { title: 'Mobile Banking App Redesign', is_verified: true },
-                { title: 'Design System học tập sinh viên', is_verified: true },
-                { title: 'Ứng dụng Đặt xe công nghệ', is_verified: true }
-              ]
-            },
-            {
-              id: 'c3',
-              full_name: 'Lê Hoàng C',
-              university: 'ĐH Khoa Học Tự Nhiên',
-              major: 'Khoa học Dữ liệu',
-              gpa: '3.6 / 4.0',
-              email: 'lehoangc@gmail.com',
-              skills: ['Python', 'SQL', 'Machine Learning', 'Pandas', 'Git'],
-              verified_projects_count: 1,
-              projects: [
-                { title: 'Mô hình Dự đoán Giá nhà đất', is_verified: true },
-                { title: 'Phân tích Dữ liệu Khách hàng Ecommerce', is_verified: false }
-              ]
-            }
-          ];
-          setCandidatesList(mockCandidates);
+          setCandidatesList([]);
         }
       } catch (err) {
         console.error("Load candidates error:", err);
